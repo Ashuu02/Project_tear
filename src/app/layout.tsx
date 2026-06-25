@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Lora, DM_Sans } from "next/font/google";
+import { Lora, DM_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 
 const lora = Lora({
@@ -17,6 +17,13 @@ const dmSans = DM_Sans({
   display: "swap",
 });
 
+const ibmPlexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-mono",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Tear — AI Product Teardowns",
   description:
@@ -27,7 +34,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${lora.variable} ${dmSans.variable}`}>
+    <html lang="en" className={`${lora.variable} ${dmSans.variable} ${ibmPlexMono.variable}`}>
       <body className="font-dm-sans antialiased bg-tear-bg text-tear-text">
         {children}
       </body>

@@ -17,8 +17,61 @@ html, body {
   box-sizing: border-box;
 }
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.75); }
+}
+
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
+  .text-balance { text-wrap: balance; }
+
+  .spinner {
+    width: 14px;
+    height: 14px;
+    border: 1.8px solid #E8DDD2;
+    border-top-color: #C2451E;
+    border-radius: 50%;
+    animation: spin 0.85s linear infinite;
+    flex-shrink: 0;
+  }
+
+  .pulse-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #C2451E;
+    animation: pulse-dot 1.6s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+
+  .gen-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #C2451E;
+    opacity: 0.7;
+    animation: pulse-dot 1.2s ease-in-out infinite;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+
+  .stream-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 14px;
+    background: #C2451E;
+    margin-left: 2px;
+    vertical-align: middle;
+    animation: blink-cursor 1s step-end infinite;
   }
 }

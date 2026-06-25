@@ -21,8 +21,9 @@ const config: Config = {
         },
       },
       fontFamily: {
-        lora:   ["var(--font-lora)", "Georgia", "serif"],
+        lora:     ["var(--font-lora)", "Georgia", "serif"],
         "dm-sans": ["var(--font-dm-sans)", "system-ui", "sans-serif"],
+        mono:     ["var(--font-mono)", "monospace"],
       },
       keyframes: {
         fadeUp: {
