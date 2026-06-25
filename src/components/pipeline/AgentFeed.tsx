@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 
-type FeedStatus = "done" | "active" | "queued";
+export type FeedStatus = "done" | "active" | "queued" | "error";
 
-interface FeedItem {
+export interface FeedItem {
   id: string;
   agent: string;
   message: string;
@@ -12,21 +12,22 @@ interface FeedItem {
   status: FeedStatus;
 }
 
-const MOCK_FEED: FeedItem[] = [
-  { id: "1", agent: "Question Agent", message: "Intake complete. 9 signals extracted.", status: "done" },
-  { id: "2", agent: "Crawler Agent", message: "Fetched product site — pricing, changelog, features", url: "notion.so/pricing", status: "done" },
-  { id: "3", agent: "Crawler Agent", message: "Pulled 847 G2 reviews, last 90 days", url: "g2.com/products/notion", status: "done" },
-  { id: "4", agent: "Crawler Agent", message: "Checking Reddit r/productivity...", url: "reddit.com/r/productivity", status: "active" },
-  { id: "5", agent: "Crawler Agent", message: "App Store reviews — queued", status: "queued" },
-  { id: "6", agent: "Backend Agent", message: "Indexing & deduplication — queued", status: "queued" },
-  { id: "7", agent: "Document Agent", message: "Drafting teardown — queued", status: "queued" },
-];
-
 function DoneIcon() {
   return (
     <div className="w-[18px] h-[18px] rounded-full bg-[#EBF7F0] border-[1.5px] border-[#B8E6CE] flex items-center justify-center flex-shrink-0 mt-px">
       <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
         <polyline points="1.5,4.5 3.5,6.5 7.5,2.5" stroke="#22A05B" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </div>
+  );
+}
+
+function ErrorIcon() {
+  return (
+    <div className="w-[18px] h-[18px] rounded-full bg-[#FEF0EE] border-[1.5px] border-[#F5C6C0] flex items-center justify-center flex-shrink-0 mt-px">
+      <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
+        <line x1="2" y1="2" x2="7" y2="7" stroke="#E53E3E" strokeWidth="1.4" strokeLinecap="round" />
+        <line x1="7" y1="2" x2="2" y2="7" stroke="#E53E3E" strokeWidth="1.4" strokeLinecap="round" />
       </svg>
     </div>
   );
@@ -43,7 +44,12 @@ function QueuedIcon() {
   );
 }
 
-export default function AgentFeed({ productName }: { productName: string }) {
+interface AgentFeedProps {
+  productName: string;
+  feedItems: FeedItem[];
+}
+
+export default function AgentFeed({ productName, feedItems }: AgentFeedProps) {
   const [askValue, setAskValue] = useState("");
 
   return (
@@ -57,25 +63,26 @@ export default function AgentFeed({ productName }: { productName: string }) {
 
       {/* Scrollable feed */}
       <div className="flex-1 overflow-y-auto px-8 pb-2 flex flex-col">
-        {MOCK_FEED.map((item, i) => (
+        {feedItems.map((item, i) => (
           <div
             key={item.id}
             className={`
               flex gap-3 py-3.5 border-b border-[#F0E8DF] items-start
               ${item.status === "active" ? "bg-gradient-to-r from-[rgba(194,69,30,0.03)] to-transparent rounded-md" : ""}
-              ${item.status === "queued" ? `opacity-${i === 4 ? "55" : i === 5 ? "45" : "35"}` : ""}
+              ${item.status === "queued" ? "opacity-40" : ""}
             `}
-            style={{ animation: `fadeUp 0.35s ease ${0.05 + i * 0.05}s both` }}
+            style={{ animation: `fadeUp 0.35s ease ${0.05 + i * 0.04}s both` }}
           >
             {item.status === "done"   && <DoneIcon />}
             {item.status === "active" && <div className="spinner mt-0.5" />}
             {item.status === "queued" && <QueuedIcon />}
+            {item.status === "error"  && <ErrorIcon />}
 
-            <div className="flex flex-col gap-0.5">
+            <div className="flex flex-col gap-0.5 min-w-0">
               <span className={`text-[13px] font-semibold ${item.status === "queued" ? "text-tear-muted" : "text-tear-text"}`}>
                 {item.agent}
               </span>
-              <span className={`text-[13px] leading-[1.5] ${item.status === "queued" ? "text-[#A89890]" : "text-tear-muted"}`}>
+              <span className={`text-[13px] leading-[1.5] break-words ${item.status === "queued" ? "text-[#A89890]" : "text-tear-muted"}`}>
                 {item.message}
                 {item.status === "active" && <span className="stream-cursor" />}
               </span>
