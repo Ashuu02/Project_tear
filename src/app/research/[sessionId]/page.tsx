@@ -9,10 +9,11 @@ import DocumentBody from "@/components/research/DocumentBody";
 import CitationsPanel from "@/components/research/CitationsPanel";
 
 export default function ResearchPage() {
-  const router      = useRouter();
-  const productName = useSessionStore((s) => s.productName);
-  const sessionId   = useSessionStore((s) => s.sessionId);
-  const researchDoc = useSessionStore((s) => s.researchDoc);
+  const router          = useRouter();
+  const productName     = useSessionStore((s) => s.productName);
+  const sessionId       = useSessionStore((s) => s.sessionId);
+  const researchDoc     = useSessionStore((s) => s.researchDoc);
+
   const [ready, setReady]                 = useState(false);
   const [activeSection, setActiveSection] = useState("exec_summary");
 
@@ -25,12 +26,17 @@ export default function ResearchPage() {
     if (ready && !productName) router.replace("/");
   }, [ready, productName, router]);
 
-  // Default active section to first section id when doc loads
   useEffect(() => {
     if (researchDoc?.sections?.[0]) {
       setActiveSection(researchDoc.sections[0].id);
     }
   }, [researchDoc]);
+
+  async function handleDownloadPdf() {
+    if (!researchDoc) return;
+    const { downloadResearchPdf } = await import("@/lib/downloadPdf");
+    await downloadResearchPdf(productName, researchDoc);
+  }
 
   if (!ready || !productName) {
     return (
@@ -42,7 +48,11 @@ export default function ResearchPage() {
 
   return (
     <div className="h-screen bg-tear-bg flex flex-col font-dm-sans text-tear-text overflow-hidden">
-      <ResearchNav productName={productName} sessionId={sessionId} />
+      <ResearchNav
+        productName={productName}
+        sessionId={sessionId}
+        onDownloadPdf={handleDownloadPdf}
+      />
       <div className="flex-1 flex overflow-hidden">
         <SectionSidebar
           activeSection={activeSection}

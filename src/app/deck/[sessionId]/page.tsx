@@ -6,6 +6,7 @@ import { useSessionStore } from "@/store/session";
 import DeckNav from "@/components/deck/DeckNav";
 import SlideThumbnails from "@/components/deck/SlideThumbnails";
 import SlideCanvas, { getMockSlides, getSlidesInfo } from "@/components/deck/SlideCanvas";
+import { getMockDeckData } from "@/data/mockPipeline";
 
 export default function DeckPage() {
   const router      = useRouter();
@@ -42,6 +43,12 @@ export default function DeckPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, [prev, next]);
 
+  async function handleDownloadPptx() {
+    const data = deckData ?? getMockDeckData(productName);
+    const { downloadPptx } = await import("@/lib/downloadPptx");
+    await downloadPptx(productName, data);
+  }
+
   if (!ready || !productName) {
     return (
       <div className="h-screen bg-tear-bg flex items-center justify-center font-dm-sans">
@@ -57,6 +64,7 @@ export default function DeckPage() {
         sessionId={sessionId}
         currentSlide={currentSlide}
         totalSlides={total}
+        onDownloadPptx={handleDownloadPptx}
       />
 
       <div className="flex-1 flex overflow-hidden">

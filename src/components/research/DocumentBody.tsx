@@ -32,29 +32,6 @@ function InsightBox({ children }: { children: React.ReactNode }) {
   );
 }
 
-function DynamicTable({ label, headers, rows }: { label: string; headers: string[]; rows: string[][] }) {
-  return (
-    <div className="my-5 bg-[#F5EFE4] rounded-[10px] border border-tear-border overflow-hidden">
-      <div className="px-5 py-3 border-b border-tear-border">
-        <span className="text-[10.5px] font-semibold tracking-[0.13em] uppercase text-[#A89890]">{label}</span>
-      </div>
-      <div className="divide-y divide-[#EDE5DC]">
-        {rows.map((row, ri) => (
-          <div key={ri} className="grid px-5 py-3 gap-4" style={{ gridTemplateColumns: `repeat(${headers.length}, 1fr)` }}>
-            {row.map((cell, ci) => (
-              <span
-                key={ci}
-                className={`text-[13px] leading-[1.4] ${ci === 0 ? "font-semibold text-tear-text" : ci === 2 ? "font-medium text-tear-primary" : "text-tear-muted"}`}
-              >
-                {cell}
-              </span>
-            ))}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 function StatRow({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
@@ -70,22 +47,16 @@ function StatRow({ label, value, sub }: { label: string; value: string; sub?: st
 
 function DynamicSection({ section, index }: { section: ResearchSection; index: number }) {
   const num = String(index + 1).padStart(2, "0");
+  const paragraphs = section.content?.split("\n\n").filter(Boolean) ?? [];
   return (
     <div>
       <SectionHeading id={section.id} num={num} title={section.title} />
-      {section.paragraphs?.map((para, i) => (
+      {paragraphs.map((para, i) => (
         <p key={i} className="text-[14.5px] leading-[1.8] text-tear-text mb-4">
           {para}
           {i === 0 && <Cite num={index + 1} />}
         </p>
       ))}
-      {section.table && (
-        <DynamicTable
-          label={section.table.label}
-          headers={section.table.headers}
-          rows={section.table.rows}
-        />
-      )}
       {section.keyInsight && <InsightBox>{section.keyInsight}</InsightBox>}
       {section.stats?.map((s) => (
         <StatRow key={s.label} label={s.label} value={s.value} sub={s.sub} />

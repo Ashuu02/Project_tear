@@ -7,13 +7,12 @@ import PipelineNav from "@/components/pipeline/PipelineNav";
 import AgentFeed from "@/components/pipeline/AgentFeed";
 import TeardownPreview from "@/components/pipeline/TeardownPreview";
 import type { FeedItem } from "@/components/pipeline/AgentFeed";
-import type { ResearchDoc, DeckData } from "@/types/teardown";
+import type { ResearchDoc } from "@/types/teardown";
 
 const INITIAL_FEED: FeedItem[] = [
-  { id: "q",  agent: "Question Agent", message: "Analyzing product…",          status: "queued" },
-  { id: "c",  agent: "Crawler Agent",  message: "Web research — queued",        status: "queued" },
-  { id: "d",  agent: "Document Agent", message: "Synthesizing teardown — queued", status: "queued" },
-  { id: "p",  agent: "PPTX Agent",     message: "Building slide deck — queued", status: "queued" },
+  { id: "q", agent: "Question Agent", message: "Analyzing product…",            status: "queued" },
+  { id: "c", agent: "Crawler Agent",  message: "Web research — queued",          status: "queued" },
+  { id: "d", agent: "Document Agent", message: "Synthesizing teardown — queued", status: "queued" },
 ];
 
 export default function PipelinePage() {
@@ -22,13 +21,14 @@ export default function PipelinePage() {
   const sessionId      = useSessionStore((s) => s.sessionId);
   const tier1Answers   = useSessionStore((s) => s.tier1Answers);
   const setResearchDoc = useSessionStore((s) => s.setResearchDoc);
-  const setDeckData    = useSessionStore((s) => s.setDeckData);
 
-  const [ready, setReady]         = useState(false);
-  const [feedItems, setFeedItems]   = useState<FeedItem[]>(INITIAL_FEED);
-  const [previewText, setPreviewText] = useState<string | undefined>();
+  const [ready, setReady]                   = useState(false);
+  const [feedItems, setFeedItems]           = useState<FeedItem[]>(INITIAL_FEED);
+  const [previewText, setPreviewText]       = useState<string | undefined>();
   const [sourceProgress, setSourceProgress] = useState<{ crawled: number; total: number } | undefined>();
+  const [stopped, setStopped]               = useState(false);
   const crawlCountRef = useRef(0);
+  const esRef         = useRef<EventSource | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setReady(true), 50);
@@ -45,6 +45,19 @@ export default function PipelinePage() {
     );
   }
 
+  function handleStop() {
+    esRef.current?.close();
+    esRef.current = null;
+    setStopped(true);
+    setFeedItems((prev) =>
+      prev.map((item) =>
+        item.status === "active" || item.status === "queued"
+          ? { ...item, status: "error", message: "Stopped by user" }
+          : item
+      )
+    );
+  }
+
   useEffect(() => {
     if (!ready || !productName) return;
 
@@ -53,6 +66,7 @@ export default function PipelinePage() {
       tier1: JSON.stringify(tier1Answers ?? {}),
     });
     const es = new EventSource(`/api/stream/${sessionId}?${params}`);
+    esRef.current = es;
 
     es.onmessage = (e) => {
       try {
@@ -91,7 +105,6 @@ export default function PipelinePage() {
           }
           case "done": {
             setResearchDoc(data.document as ResearchDoc);
-            setDeckData(data.deck as DeckData);
             es.close();
             router.push(`/research/${sessionId}`);
             break;
@@ -114,7 +127,7 @@ export default function PipelinePage() {
     };
 
     return () => es.close();
-  }, [ready, productName, sessionId, tier1Answers, setResearchDoc, setDeckData, router]);
+  }, [ready, productName, sessionId, tier1Answers, setResearchDoc, router]);
 
   if (!ready || !productName) {
     return (
@@ -126,7 +139,7 @@ export default function PipelinePage() {
 
   return (
     <div className="h-screen bg-tear-bg flex flex-col font-dm-sans text-tear-text overflow-hidden">
-      <PipelineNav productName={productName} />
+      <PipelineNav productName={productName} onStop={stopped ? undefined : handleStop} />
       <div className="flex-1 flex overflow-hidden">
         <AgentFeed productName={productName} feedItems={feedItems} />
         <TeardownPreview productName={productName} previewText={previewText} sourceProgress={sourceProgress} />

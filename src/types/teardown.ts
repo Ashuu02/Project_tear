@@ -1,13 +1,8 @@
 export interface ResearchSection {
   id: string;
   title: string;
-  paragraphs: string[];
+  content: string;
   keyInsight?: string;
-  table?: {
-    label: string;
-    headers: string[];
-    rows: string[][];
-  };
   stats?: Array<{ label: string; value: string; sub?: string }>;
 }
 

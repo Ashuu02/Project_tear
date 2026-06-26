@@ -1,4 +1,9 @@
-export default function PipelineNav({ productName }: { productName: string }) {
+interface PipelineNavProps {
+  productName: string;
+  onStop?: () => void;
+}
+
+export default function PipelineNav({ productName, onStop }: PipelineNavProps) {
   return (
     <nav className="flex items-center justify-between px-10 py-[18px] border-b border-[#EDE5DC] flex-shrink-0 bg-tear-bg z-10">
       <div className="flex items-center gap-2.5">
@@ -12,9 +17,27 @@ export default function PipelineNav({ productName }: { productName: string }) {
       <div className="flex items-center gap-2.5">
         <span className="text-[13px] font-normal text-tear-muted">{productName}</span>
         <span className="text-[13px] text-tear-chip-border">·</span>
-        <span className="text-[13px] font-medium text-tear-text">Research in progress</span>
-        <div className="pulse-dot" />
+        {onStop ? (
+          <>
+            <span className="text-[13px] font-medium text-tear-text">Research in progress</span>
+            <div className="pulse-dot" />
+          </>
+        ) : (
+          <span className="text-[13px] font-medium text-tear-muted">Stopped</span>
+        )}
       </div>
+
+      {onStop && (
+        <button
+          onClick={onStop}
+          className="flex items-center gap-1.5 px-3.5 py-[7px] text-[12px] font-medium text-tear-muted border-[1.5px] border-tear-border rounded-lg hover:border-red-400 hover:text-red-500 transition-colors duration-150"
+        >
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="currentColor">
+            <rect x="2" y="2" width="8" height="8" rx="1.5" />
+          </svg>
+          Stop
+        </button>
+      )}
     </nav>
   );
 }
