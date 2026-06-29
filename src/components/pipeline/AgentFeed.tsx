@@ -11,6 +11,7 @@ export interface FeedItem {
   url?: string;
   findings?: string;
   status: FeedStatus;
+  progress?: number; // 0-100, shown as progress bar when active
 }
 
 function DoneIcon() {
@@ -90,6 +91,18 @@ export default function AgentFeed({ productName, feedItems }: AgentFeedProps) {
                   {item.message}
                   {item.status === "active" && <span className="stream-cursor" />}
                 </span>
+
+                {/* Progress bar — shown for active items with a progress value */}
+                {item.status === "active" && typeof item.progress === "number" && (
+                  <div className="mt-1.5 w-full max-w-[280px]">
+                    <div className="h-[3px] bg-[#EDE5DC] rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-tear-primary rounded-full transition-all duration-500 ease-out"
+                        style={{ width: `${item.progress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {/* Crawl-specific: domain + URL + findings */}
                 {isCrawlItem && (

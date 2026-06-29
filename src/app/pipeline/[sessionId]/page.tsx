@@ -42,8 +42,9 @@ export default function PipelinePage() {
   }, [ready, productName, router]);
 
   function updateAgentItem(agentName: string, patch: Partial<FeedItem>) {
+    // Only update the main agent row (no url), not crawl sub-items
     setFeedItems((prev) =>
-      prev.map((item) => item.agent === agentName ? { ...item, ...patch } : item)
+      prev.map((item) => item.agent === agentName && !item.url ? { ...item, ...patch } : item)
     );
   }
 
@@ -85,11 +86,15 @@ export default function PipelinePage() {
         switch (data.type) {
           case "agent": {
             if (data.status === "running") {
-              updateAgentItem(data.agent, { status: "active", message: data.message });
+              updateAgentItem(data.agent, {
+                status: "active",
+                message: data.message,
+                ...(typeof data.progress === "number" ? { progress: data.progress } : {}),
+              });
             } else if (data.status === "done") {
-              updateAgentItem(data.agent, { status: "done", message: data.message });
+              updateAgentItem(data.agent, { status: "done", message: data.message, progress: undefined });
             } else if (data.status === "error") {
-              updateAgentItem(data.agent, { status: "error", message: data.message ?? "Error" });
+              updateAgentItem(data.agent, { status: "error", message: data.message ?? "Error", progress: undefined });
             }
             break;
           }
