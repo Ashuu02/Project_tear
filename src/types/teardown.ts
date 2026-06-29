@@ -1,9 +1,35 @@
+export interface TableData {
+  id: string;
+  title: string;
+  headers: string[];
+  rows: string[][];
+}
+
+export interface ChartPoint {
+  label: string;
+  value: number;
+  color?: string;
+}
+
+export interface ChartData {
+  id: string;
+  type: "bar" | "pie" | "line" | "donut";
+  title: string;
+  xAxis?: string;
+  yAxis?: string;
+  unit?: string;
+  data: ChartPoint[];
+}
+
 export interface ResearchSection {
   id: string;
   title: string;
   content: string;
   keyInsight?: string;
-  stats?: Array<{ label: string; value: string; sub?: string }>;
+  stats?: Array<{ label: string; value: string; sub?: string; change?: string }>;
+  bullets?: string[];
+  tables?: TableData[];
+  chartData?: ChartData[];
 }
 
 export interface TeardownSource {

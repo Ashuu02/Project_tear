@@ -3,14 +3,18 @@
 import type { ResearchSection } from "@/types/teardown";
 
 const FALLBACK = [
-  { id: "exec_summary",   num: "01", label: "Executive Summary" },
-  { id: "product_ux",     num: "02", label: "Product & UX" },
-  { id: "business_model", num: "03", label: "Business Model" },
-  { id: "gtm_growth",     num: "04", label: "GTM & Growth" },
-  { id: "tech_arch",      num: "05", label: "Tech Architecture" },
-  { id: "market_comp",    num: "06", label: "Market & Competition" },
-  { id: "community",      num: "07", label: "Community & Ecosystem" },
-  { id: "financials",     num: "08", label: "Financials & Funding" },
+  { id: "exec_summary",      num: "01", label: "Executive Summary" },
+  { id: "product_ux",        num: "02", label: "Product & UX" },
+  { id: "business_model",    num: "03", label: "Business Model" },
+  { id: "pricing_analysis",  num: "04", label: "Pricing Deep-Dive" },
+  { id: "gtm_growth",        num: "05", label: "GTM & Growth" },
+  { id: "tech_arch",         num: "06", label: "Tech Architecture" },
+  { id: "market_comp",       num: "07", label: "Market & Competition" },
+  { id: "customer_profiles", num: "08", label: "Customer Profiles" },
+  { id: "community",         num: "09", label: "Community & Ecosystem" },
+  { id: "financials",        num: "10", label: "Financials & Funding" },
+  { id: "swot_analysis",     num: "11", label: "SWOT Analysis" },
+  { id: "strategic_outlook", num: "12", label: "Strategic Outlook" },
 ];
 
 interface SectionSidebarProps {

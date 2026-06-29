@@ -20,6 +20,8 @@ export default function PipelinePage() {
   const productName    = useSessionStore((s) => s.productName);
   const sessionId      = useSessionStore((s) => s.sessionId);
   const tier1Answers   = useSessionStore((s) => s.tier1Answers);
+  const tier2Answers   = useSessionStore((s) => s.tier2Answers);
+  const userContext    = useSessionStore((s) => s.userContext);
   const setResearchDoc = useSessionStore((s) => s.setResearchDoc);
 
   const [ready, setReady]                   = useState(false);
@@ -63,8 +65,16 @@ export default function PipelinePage() {
 
     const params = new URLSearchParams({
       product: productName,
+      sessionId,
       tier1: JSON.stringify(tier1Answers ?? {}),
+      tier2: JSON.stringify(tier2Answers ?? {}),
     });
+
+    // Pass user context if available
+    if (userContext?.text) {
+      params.set("userContext", userContext.text);
+    }
+
     const es = new EventSource(`/api/stream/${sessionId}?${params}`);
     esRef.current = es;
 
@@ -88,7 +98,14 @@ export default function PipelinePage() {
             const crawlId = `crawl-${crawlCountRef.current}`;
             setFeedItems((prev) => {
               const insertAt = prev.findIndex((f) => f.agent === "Document Agent");
-              const newItem: FeedItem = { id: crawlId, agent: "Crawler Agent", message: data.message, url: data.url, status: "done" };
+              const newItem: FeedItem = {
+                id: crawlId,
+                agent: "Crawler Agent",
+                message: data.message,
+                url: data.url,
+                findings: data.findings,
+                status: "done",
+              };
               return insertAt === -1
                 ? [...prev, newItem]
                 : [...prev.slice(0, insertAt), newItem, ...prev.slice(insertAt)];
@@ -127,7 +144,7 @@ export default function PipelinePage() {
     };
 
     return () => es.close();
-  }, [ready, productName, sessionId, tier1Answers, setResearchDoc, router]);
+  }, [ready, productName, sessionId, tier1Answers, tier2Answers, userContext, setResearchDoc, router]);
 
   if (!ready || !productName) {
     return (

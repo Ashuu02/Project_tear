@@ -62,7 +62,7 @@ export default function IntakePage() {
   function handleContinue() {
     if (step < TOTAL_STEPS) { setStep((s) => s + 1); return; }
     setTier1Answers({ dimensions: Array.from(dimensions), goal, depth });
-    router.push(`/pipeline/${sessionId}`);
+    router.push(`/tier2/${sessionId}`);
   }
 
   function toggleDimension(id: string) {

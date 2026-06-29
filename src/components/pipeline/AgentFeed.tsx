@@ -9,6 +9,7 @@ export interface FeedItem {
   agent: string;
   message: string;
   url?: string;
+  findings?: string;
   status: FeedStatus;
 }
 
@@ -63,37 +64,57 @@ export default function AgentFeed({ productName, feedItems }: AgentFeedProps) {
 
       {/* Scrollable feed */}
       <div className="flex-1 overflow-y-auto px-8 pb-2 flex flex-col">
-        {feedItems.map((item, i) => (
-          <div
-            key={item.id}
-            className={`
-              flex gap-3 py-3.5 border-b border-[#F0E8DF] items-start
-              ${item.status === "active" ? "bg-gradient-to-r from-[rgba(194,69,30,0.03)] to-transparent rounded-md" : ""}
-              ${item.status === "queued" ? "opacity-40" : ""}
-            `}
-            style={{ animation: `fadeUp 0.35s ease ${0.05 + i * 0.04}s both` }}
-          >
-            {item.status === "done"   && <DoneIcon />}
-            {item.status === "active" && <div className="spinner mt-0.5" />}
-            {item.status === "queued" && <QueuedIcon />}
-            {item.status === "error"  && <ErrorIcon />}
+        {feedItems.map((item, i) => {
+          const isCrawlItem = item.agent === "Crawler Agent" && !!item.url;
 
-            <div className="flex flex-col gap-0.5 min-w-0">
-              <span className={`text-[13px] font-semibold ${item.status === "queued" ? "text-tear-muted" : "text-tear-text"}`}>
-                {item.agent}
-              </span>
-              <span className={`text-[13px] leading-[1.5] break-words ${item.status === "queued" ? "text-[#A89890]" : "text-tear-muted"}`}>
-                {item.message}
-                {item.status === "active" && <span className="stream-cursor" />}
-              </span>
-              {item.url && (
-                <span className="font-mono text-[11px] text-tear-primary opacity-75 mt-0.5">
-                  {item.url}
+          return (
+            <div
+              key={item.id}
+              className={`
+                flex gap-3 py-3.5 border-b border-[#F0E8DF] items-start
+                ${item.status === "active" ? "bg-gradient-to-r from-[rgba(194,69,30,0.03)] to-transparent rounded-md" : ""}
+                ${item.status === "queued" ? "opacity-40" : ""}
+              `}
+              style={{ animation: `fadeUp 0.35s ease ${0.05 + i * 0.04}s both` }}
+            >
+              {item.status === "done"   && <DoneIcon />}
+              {item.status === "active" && <div className="spinner mt-0.5" />}
+              {item.status === "queued" && <QueuedIcon />}
+              {item.status === "error"  && <ErrorIcon />}
+
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <span className={`text-[13px] font-semibold ${item.status === "queued" ? "text-tear-muted" : "text-tear-text"}`}>
+                  {item.agent}
                 </span>
-              )}
+                <span className={`text-[13px] leading-[1.5] break-words ${item.status === "queued" ? "text-[#A89890]" : "text-tear-muted"}`}>
+                  {item.message}
+                  {item.status === "active" && <span className="stream-cursor" />}
+                </span>
+
+                {/* Crawl-specific: domain + URL + findings */}
+                {isCrawlItem && (
+                  <div className="mt-0.5">
+                    <span className="font-mono text-[11px] font-semibold text-tear-primary">
+                      {item.url}
+                    </span>
+                    {item.findings && (
+                      <span className="block text-[11.5px] italic text-tear-muted mt-0.5 leading-[1.4]">
+                        {item.findings}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Non-crawl URL display */}
+                {!isCrawlItem && item.url && (
+                  <span className="font-mono text-[11px] text-tear-primary opacity-75 mt-0.5">
+                    {item.url}
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Ask anything */}

@@ -152,20 +152,20 @@ export default function HeroSection() {
 
         {/* Example chips */}
         <div className="flex items-center gap-3 mt-1 flex-wrap justify-center">
-          {EXAMPLES.map((chip, i) => (
-            <>
-              {i > 0 && (
-                <span key={`dot-${i}`} className="text-tear-chip-border text-sm">·</span>
-              )}
-              <span
-                key={chip}
-                onClick={() => handleSelect(chip)}
-                className="text-[13px] text-tear-chip hover:text-tear-primary transition-colors duration-150 cursor-pointer"
-              >
-                {chip}
-              </span>
-            </>
-          ))}
+          {EXAMPLES.flatMap((chip, i) =>
+            i === 0
+              ? [
+                  <span key={chip} onClick={() => handleSelect(chip)} className="text-[13px] text-tear-chip hover:text-tear-primary transition-colors duration-150 cursor-pointer">
+                    {chip}
+                  </span>,
+                ]
+              : [
+                  <span key={`dot-${i}`} className="text-tear-chip-border text-sm">·</span>,
+                  <span key={chip} onClick={() => handleSelect(chip)} className="text-[13px] text-tear-chip hover:text-tear-primary transition-colors duration-150 cursor-pointer">
+                    {chip}
+                  </span>,
+                ]
+          )}
         </div>
       </div>
     </main>
