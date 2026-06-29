@@ -86,11 +86,15 @@ export default function PipelinePage() {
         switch (data.type) {
           case "agent": {
             if (data.status === "running") {
-              updateAgentItem(data.agent, { status: "active", message: data.message });
+              updateAgentItem(data.agent, {
+                status: "active",
+                message: data.message,
+                ...(typeof data.progress === "number" ? { progress: data.progress } : {}),
+              });
             } else if (data.status === "done") {
-              updateAgentItem(data.agent, { status: "done", message: data.message });
+              updateAgentItem(data.agent, { status: "done", message: data.message, progress: undefined });
             } else if (data.status === "error") {
-              updateAgentItem(data.agent, { status: "error", message: data.message ?? "Error" });
+              updateAgentItem(data.agent, { status: "error", message: data.message ?? "Error", progress: undefined });
             }
             break;
           }
