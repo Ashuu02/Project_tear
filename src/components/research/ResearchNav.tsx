@@ -6,9 +6,10 @@ interface ResearchNavProps {
   productName: string;
   sessionId: string;
   onDownloadPdf: () => void;
+  tokenCount?: number;
 }
 
-export default function ResearchNav({ productName, sessionId, onDownloadPdf }: ResearchNavProps) {
+export default function ResearchNav({ productName, sessionId, onDownloadPdf, tokenCount }: ResearchNavProps) {
   const router = useRouter();
 
   return (
@@ -25,6 +26,18 @@ export default function ResearchNav({ productName, sessionId, onDownloadPdf }: R
         <span className="text-[13px] font-normal text-tear-muted">{productName}</span>
         <span className="text-[13px] text-tear-chip-border mx-1">·</span>
         <span className="text-[13px] font-medium text-tear-text">Research Document</span>
+
+        {typeof tokenCount === "number" && tokenCount > 0 && (
+          <>
+            <span className="text-[13px] text-tear-chip-border mx-1">·</span>
+            <span className="flex items-center gap-1 text-[11.5px] font-medium text-[#A89890] bg-[#F5EFE4] border border-tear-border px-2.5 py-1 rounded-full">
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                <polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5" fill="#A89890" />
+              </svg>
+              {tokenCount.toLocaleString()} tokens used
+            </span>
+          </>
+        )}
       </div>
 
       <div className="flex items-center gap-2.5">
