@@ -25,14 +25,6 @@ function extractURLs(text: string): string[] {
   return Array.from(new Set(matches)).slice(0, 12);
 }
 
-function extractFindingsForDomain(domain: string, researchText: string): string | undefined {
-  const sentences = researchText.split(/[.!?]+/).map((s) => s.trim()).filter(Boolean);
-  const domainBase = domain.replace("www.", "").split(".")[0];
-  const match = sentences.find((s) =>
-    s.toLowerCase().includes(domainBase.toLowerCase()) && s.length > 20
-  );
-  return match ? match + "." : undefined;
-}
 
 function buildTargetedSearchTerms(
   productName: string,
@@ -57,11 +49,16 @@ function buildTargetedSearchTerms(
   return extra.join("\n");
 }
 
-// Compress crawler text to reduce tokens passed to document agent
-function compressCrawlerText(text: string, maxChars = 18000): string {
+function extractFindingsShort(domain: string, researchText: string): string | undefined {
+  const sentences = researchText.split(/[.!?]+/).map((s) => s.trim()).filter(Boolean);
+  const base = domain.replace("www.", "").split(".")[0];
+  const match = sentences.find((s) => s.toLowerCase().includes(base.toLowerCase()) && s.length > 20 && s.length < 200);
+  return match ? match.slice(0, 120) + (match.length > 120 ? "…" : ".") : undefined;
+}
+
+function compressCrawlerText(text: string, maxChars = 12000): string {
   if (text.length <= maxChars) return text;
-  // Keep first 12k (most relevant) + last 4k (often has summary/conclusion)
-  return text.slice(0, 14000) + "\n\n[...middle truncated for brevity...]\n\n" + text.slice(-4000);
+  return text.slice(0, 9000) + "\n\n[...truncated...]\n\n" + text.slice(-3000);
 }
 
 export async function GET(req: NextRequest) {
@@ -236,7 +233,7 @@ Be specific — use exact numbers, dates, percentages, direct quotes. Mark uncer
         urls.forEach((url, i) => {
           try {
             const domain = new URL(url).hostname.replace("www.", "");
-            const findings = extractFindingsForDomain(domain, researchText);
+            const findings = extractFindingsShort(domain, researchText);
             send({ type: "crawl", url: domain, message: `Fetched ${domain}`, findings });
             send({ type: "sources", crawled: i + 1, total: Math.max(urls.length, 10) });
           } catch {}
@@ -253,23 +250,22 @@ Be specific — use exact numbers, dates, percentages, direct quotes. Mark uncer
 
         const compressedResearch = compressCrawlerText(researchText);
 
-        const docPrompt = `You are a senior product analyst writing a comprehensive teardown of "${productName}" for investors, founders, and product teams.
+        const docPrompt = `You are a senior product analyst. Write a comprehensive 12-section teardown of "${productName}" as a single valid JSON object. No markdown, no backticks — raw JSON only.
 
-RESEARCH DATA:
+RESEARCH (use all specific numbers, dates, names found here):
 ${compressedResearch}
 
-USER PROFILE:
-- Focus areas: ${focusAreas}
-- Goal: ${tier1.goal ?? "general analysis"}
-- Depth: ${tier1.depth ?? "standard"}
-- In-depth preferences: ${tier2Context || "none"}
-${userContext ? `- User context: ${userContext}` : ""}
+USER: focus=${focusAreas} | goal=${tier1.goal ?? "general"} | depth=${tier1.depth ?? "standard"}${tier2Context ? ` | prefs: ${tier2Context}` : ""}${userContext ? ` | context: ${userContext}` : ""}
 
-Generate a 12-section research document as valid JSON only (no markdown, no backticks).
+OUTPUT: JSON with this exact shape. All 12 sections required. Replace every placeholder with REAL data from the research above.
 
-CRITICAL:
-- Every section must have substantial content (3-5 paragraphs minimum)
-- Use REAL data from the research — specific numbers, percentages, dates, names
+RULES:
+- content: 3-5 paragraphs separated by \\n\\n, each 80-120 words, use real data
+- stats: 3-6 real metrics with actual numbers (label/value/sub/change)
+- bullets: 4-6 sharp specific takeaways
+- chartData values must be real numbers (not 0 placeholders)
+- tables rows must have real competitor names, prices, data
+- If data unavailable, estimate and mark "est."
 - chartData and tables must have realistic numeric values (not placeholders)
 - bullets array = 4-6 sharp, specific takeaways per section
 - stats array = 3-6 key metrics with real numbers
@@ -623,11 +619,25 @@ JSON SCHEMA (return exactly this structure with all 12 sections):
   ]
 }
 
-IMPORTANT: Replace ALL placeholder values (YEAR, $XM, X,000, etc.) with REAL data from the research. If a data point is unavailable, use a reasonable labeled estimate ("~$X est." or "n/a — private company"). Every chart's data array must contain real numeric values. The competitive matrix and pricing tables must have real competitor names and prices from the research.`;
+JSON schema (produce all 12 sections):
+{"sections":[
+{"id":"exec_summary","title":"Executive Summary","content":"...","keyInsight":"...","stats":[{"label":"Founded","value":"YEAR"},{"label":"Valuation","value":"$XB","change":"+X% YoY"},{"label":"Users","value":"XM+"},{"label":"Employees","value":"~X,000"}],"bullets":["...x5"]},
+{"id":"product_ux","title":"Product & UX Analysis","content":"...","keyInsight":"...","stats":[{"label":"G2 Rating","value":"X.X/5","sub":"X,000 reviews"},{"label":"App Store","value":"X.X/5"}],"bullets":["...x4"],"tables":[{"id":"feature_matrix","title":"Core Feature Matrix","headers":["Feature","Free","Pro","Enterprise"],"rows":[["Feature 1","Basic","Full","Custom"],["Feature 2","No","Yes","Yes"]]}]},
+{"id":"business_model","title":"Business Model & Revenue","content":"...","keyInsight":"...","stats":[{"label":"ARR","value":"$XM","change":"+X% YoY"},{"label":"Gross Margin","value":"~XX%"},{"label":"Revenue Model","value":"SaaS/Usage/Hybrid"}],"bullets":["...x4"],"chartData":[{"id":"rev_segments","type":"pie","title":"Revenue by Segment","data":[{"label":"Enterprise","value":55},{"label":"Mid-Market","value":30},{"label":"SMB","value":15}]}]},
+{"id":"pricing_analysis","title":"Pricing Deep-Dive","content":"...","keyInsight":"...","stats":[{"label":"Entry Price","value":"$X/mo"},{"label":"Enterprise","value":"Custom"},{"label":"Free Tier","value":"Yes/No"}],"bullets":["...x4"],"tables":[{"id":"pricing_tiers","title":"Pricing Tiers","headers":["Plan","Price","Users","Key Features","Target"],"rows":[["Free","$0","1","Basic","Individual"],["Pro","$X/mo","5","Advanced","Teams"],["Business","$X/mo","Unlimited","All features","Companies"],["Enterprise","Custom","Unlimited","SSO+SLA","Enterprise"]]}],"chartData":[{"id":"price_compare","type":"bar","title":"Price vs Competitors ($/seat/mo)","xAxis":"Product","yAxis":"Price","unit":"$","data":[{"label":"${productName}","value":0},{"label":"Competitor A","value":0},{"label":"Competitor B","value":0}]}]},
+{"id":"gtm_growth","title":"GTM & Growth Strategy","content":"...","keyInsight":"...","stats":[{"label":"GTM Motion","value":"PLG/SLG/Hybrid"},{"label":"Monthly Traffic","value":"X.XM"},{"label":"Primary Channel","value":"..."}],"bullets":["...x4"],"chartData":[{"id":"growth","type":"line","title":"Customer Growth (est.)","xAxis":"Year","yAxis":"Customers","data":[{"label":"2020","value":0},{"label":"2021","value":0},{"label":"2022","value":0},{"label":"2023","value":0},{"label":"2024","value":0}]}]},
+{"id":"tech_arch","title":"Technical Architecture","content":"...","keyInsight":"...","stats":[{"label":"Cloud","value":"AWS/GCP/Azure"},{"label":"API","value":"REST/GraphQL/None"},{"label":"Integrations","value":"X+"}],"bullets":["...x4"],"tables":[{"id":"tech_stack","title":"Tech Stack","headers":["Layer","Technology","Notes"],"rows":[["Frontend","...","..."],["Backend","...","..."],["Database","...","..."],["Infrastructure","...","..."]]}]},
+{"id":"market_comp","title":"Market & Competitive Landscape","content":"...","keyInsight":"...","stats":[{"label":"TAM","value":"$XB"},{"label":"CAGR","value":"XX%"},{"label":"Position","value":"Leader/Challenger/Niche"}],"bullets":["...x4"],"tables":[{"id":"comp_matrix","title":"Competitive Matrix","headers":["Dimension","${productName}","Competitor A","Competitor B","Competitor C"],"rows":[["Price","$X","$X","$X","$X"],["Free tier","Yes/No","Yes/No","Yes/No","Yes/No"],["Best for","...","...","...","..."]]}],"chartData":[{"id":"mktshare","type":"pie","title":"Est. Market Share","data":[{"label":"${productName}","value":0},{"label":"Competitor A","value":0},{"label":"Others","value":0}]}]},
+{"id":"customer_profiles","title":"Customer Profiles & ICP","content":"...","keyInsight":"...","stats":[{"label":"Primary Segment","value":"Enterprise/SMB/Consumer"},{"label":"Typical Buyer","value":"..."},{"label":"Avg ACV","value":"$X,000"}],"bullets":["...x4"],"tables":[{"id":"segments","title":"Customer Segments","headers":["Segment","Size","Key Need","Revenue %"],"rows":[["Enterprise","1000+","Security","~X%"],["Mid-Market","100-999","Scale","~X%"],["SMB","<100","Ease","~X%"]]}],"chartData":[{"id":"custmix","type":"donut","title":"Customer Mix","data":[{"label":"Enterprise","value":0},{"label":"Mid-Market","value":0},{"label":"SMB","value":0}]}]},
+{"id":"community","title":"Community & Ecosystem","content":"...","keyInsight":"...","stats":[{"label":"Community","value":"X,000+ members"},{"label":"GitHub Stars","value":"X,000+"},{"label":"Integrations","value":"X+"}],"bullets":["...x4"]},
+{"id":"financials","title":"Financials & Funding","content":"...","keyInsight":"...","stats":[{"label":"Total Raised","value":"$XM"},{"label":"Last Round","value":"Series X — $XM (YEAR)"},{"label":"Valuation","value":"$XB"},{"label":"Lead Investor","value":"..."}],"bullets":["...x4"],"tables":[{"id":"rounds","title":"Funding Rounds","headers":["Round","Year","Amount","Lead Investor","Valuation"],"rows":[["Seed","YEAR","$XM","...","$XM"],["Series A","YEAR","$XM","...","$XM"]]}],"chartData":[{"id":"funding","type":"bar","title":"Funding by Round ($M)","xAxis":"Round","yAxis":"Amount ($M)","unit":"$M","data":[{"label":"Seed","value":0},{"label":"Series A","value":0},{"label":"Series B","value":0}]}]},
+{"id":"swot_analysis","title":"SWOT Analysis","content":"4 paragraphs: Strengths, Weaknesses, Opportunities, Threats — specific and data-backed\\n\\n...","keyInsight":"...","bullets":["STRENGTH: ...","STRENGTH: ...","WEAKNESS: ...","WEAKNESS: ...","OPPORTUNITY: ...","THREAT: ..."],"tables":[{"id":"swot","title":"SWOT Summary","headers":["Category","Factor","Evidence"],"rows":[["Strength","...","..."],["Strength","...","..."],["Weakness","...","..."],["Weakness","...","..."],["Opportunity","...","..."],["Threat","...","..."]]}]},
+{"id":"strategic_outlook","title":"Strategic Outlook & Risks","content":"...","keyInsight":"Bull/bear verdict in one sentence","stats":[{"label":"Outlook","value":"Bullish/Cautious/Bearish"},{"label":"Biggest Risk","value":"..."},{"label":"M&A Target?","value":"Likely/Possible/Unlikely"}],"bullets":["...x5"]}
+],"sources":[{"num":1,"domain":"example.com","title":"What was found","url":"https://...","usedIn":"Section name"}]}`;
 
         const docResult = await generateText({
           model: anthropic("claude-sonnet-4-6"),
-          maxOutputTokens: 16000,
+          maxOutputTokens: 10000,
           messages: [{ role: "user", content: docPrompt }],
         });
 

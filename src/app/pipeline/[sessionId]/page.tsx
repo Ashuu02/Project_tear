@@ -42,8 +42,9 @@ export default function PipelinePage() {
   }, [ready, productName, router]);
 
   function updateAgentItem(agentName: string, patch: Partial<FeedItem>) {
+    // Only update the main agent row (no url), not crawl sub-items
     setFeedItems((prev) =>
-      prev.map((item) => item.agent === agentName ? { ...item, ...patch } : item)
+      prev.map((item) => item.agent === agentName && !item.url ? { ...item, ...patch } : item)
     );
   }
 
