@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSessionStore } from "@/store/session";
 import type { DeckData } from "@/types/teardown";
@@ -44,6 +44,7 @@ export default function DeckConfigPage() {
   const deckData     = useSessionStore((s) => s.deckData);
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
   const [config, setConfig] = useState<DeckConfig>({
     slideCount: 10,
     theme: "warm",
@@ -70,6 +71,8 @@ export default function DeckConfigPage() {
 
   async function handleGenerate() {
     if (!researchDoc || loading) return;
+    const controller = new AbortController();
+    abortRef.current = controller;
     setLoading(true);
     try {
       const summaryForDeck = researchDoc.sections.map((s) => ({
@@ -83,14 +86,22 @@ export default function DeckConfigPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productName, sections: summaryForDeck, config }),
+        signal: controller.signal,
       });
       if (!res.ok) throw new Error("Deck generation failed");
       const data = (await res.json()) as DeckData;
       setDeckData(data);
       router.push(`/deck/${sessionId}`);
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       setLoading(false);
     }
+  }
+
+  function handleStop() {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setLoading(false);
   }
 
   if (!ready || !productName) {
@@ -144,7 +155,8 @@ export default function DeckConfigPage() {
                   <button
                     key={n}
                     onClick={() => setConfig((c) => ({ ...c, slideCount: n }))}
-                    className={`px-[22px] py-2 rounded-full text-sm font-medium border-[1.5px] transition-all duration-150 ${
+                    disabled={loading}
+                    className={`px-[22px] py-2 rounded-full text-sm font-medium border-[1.5px] transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-50 ${
                       config.slideCount === n
                         ? "bg-tear-primary border-tear-primary text-white"
                         : "bg-transparent border-[#E8DDD2] text-tear-muted hover:border-tear-primary hover:text-tear-primary"
@@ -173,7 +185,8 @@ export default function DeckConfigPage() {
                     <button
                       key={theme.value}
                       onClick={() => setConfig((c) => ({ ...c, theme: theme.value }))}
-                      className={`flex-1 border-2 rounded-[10px] p-2.5 flex flex-col gap-2 items-center transition-all duration-150 bg-white ${
+                      disabled={loading}
+                      className={`flex-1 border-2 rounded-[10px] p-2.5 flex flex-col gap-2 items-center transition-all duration-150 bg-white disabled:cursor-not-allowed disabled:opacity-50 ${
                         active
                           ? "border-tear-primary shadow-[0_0_0_3px_rgba(194,69,30,0.1)]"
                           : "border-[#E8DDD2] hover:border-tear-primary"
@@ -212,7 +225,8 @@ export default function DeckConfigPage() {
                     <button
                       key={opt.value}
                       onClick={() => toggleFocus(opt.value)}
-                      className={`px-[18px] py-2 rounded-full text-[13px] border-[1.5px] transition-all duration-150 ${
+                      disabled={loading}
+                      className={`px-[18px] py-2 rounded-full text-[13px] border-[1.5px] transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-50 ${
                         active
                           ? "bg-[#FBF0EB] border-tear-primary text-tear-primary font-medium"
                           : "bg-transparent border-[#E8DDD2] text-tear-muted hover:border-tear-primary hover:text-tear-primary"
@@ -242,7 +256,8 @@ export default function DeckConfigPage() {
                     <button
                       key={opt.value}
                       onClick={() => setConfig((c) => ({ ...c, tone: opt.value }))}
-                      className={`flex-1 py-2.5 px-3 text-[13px] border-[1.5px] rounded-lg text-center transition-all duration-150 ${
+                      disabled={loading}
+                      className={`flex-1 py-2.5 px-3 text-[13px] border-[1.5px] rounded-lg text-center transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-50 ${
                         active
                           ? "bg-[#FBF0EB] border-tear-primary text-tear-primary font-medium"
                           : "bg-transparent border-[#E8DDD2] text-tear-muted hover:border-tear-primary hover:text-tear-primary"
@@ -267,7 +282,8 @@ export default function DeckConfigPage() {
               </div>
               <button
                 onClick={() => setConfig((c) => ({ ...c, charts: !c.charts }))}
-                className="w-[42px] h-6 rounded-full relative flex-shrink-0 transition-colors duration-200"
+                disabled={loading}
+                className="w-[42px] h-6 rounded-full relative flex-shrink-0 transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-50"
                 style={{ backgroundColor: config.charts ? "#C2451E" : "#D1C4BE" }}
               >
                 <span
@@ -297,6 +313,17 @@ export default function DeckConfigPage() {
               "Generate my deck →"
             )}
           </button>
+          {loading && (
+            <button
+              onClick={handleStop}
+              className="w-full py-[13px] border-[1.5px] border-[#E8DDD2] text-tear-muted font-dm-sans text-sm font-medium rounded-[10px] hover:border-tear-primary hover:text-tear-primary transition-colors duration-150 flex items-center justify-center gap-2"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <rect x="3" y="3" width="8" height="8" rx="1.5" fill="currentColor" />
+              </svg>
+              Stop generation
+            </button>
+          )}
           <p className="text-[13px] italic text-[#A89890] text-center">
             Usually ready in 60–90 seconds · Preview slides as they generate
           </p>
