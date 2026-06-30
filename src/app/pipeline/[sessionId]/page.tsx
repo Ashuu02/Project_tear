@@ -8,6 +8,7 @@ import AgentFeed from "@/components/pipeline/AgentFeed";
 import TeardownPreview from "@/components/pipeline/TeardownPreview";
 import type { FeedItem } from "@/components/pipeline/AgentFeed";
 import type { ResearchDoc } from "@/types/teardown";
+import { useTeardownHistory, getProductCategory } from "@/store/teardownHistory";
 
 const INITIAL_FEED: FeedItem[] = [
   { id: "q", agent: "Question Agent", message: "Analyzing product…",            status: "queued" },
@@ -23,6 +24,7 @@ export default function PipelinePage() {
   const tier2Answers   = useSessionStore((s) => s.tier2Answers);
   const userContext    = useSessionStore((s) => s.userContext);
   const setResearchDoc = useSessionStore((s) => s.setResearchDoc);
+  const addEntry = useTeardownHistory((s) => s.addEntry);
 
   const [ready, setReady]                   = useState(false);
   const [feedItems, setFeedItems]           = useState<FeedItem[]>(INITIAL_FEED);
@@ -126,7 +128,17 @@ export default function PipelinePage() {
             break;
           }
           case "done": {
-            setResearchDoc(data.document as ResearchDoc);
+            const doc = data.document as ResearchDoc;
+            setResearchDoc(doc);
+            addEntry({
+              sessionId,
+              productName,
+              category: getProductCategory(productName),
+              status: "complete",
+              description: doc?.sections?.[0]?.keyInsight?.slice(0, 130) ?? "",
+              sourcesCount: crawlCountRef.current,
+              createdAt: new Date().toISOString(),
+            });
             es.close();
             router.push(`/research/${sessionId}`);
             break;
