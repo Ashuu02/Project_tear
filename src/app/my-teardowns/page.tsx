@@ -268,7 +268,7 @@ export default function MyTeardownsPage() {
           </div>
           <Link
             href="/"
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#3D1A0A] hover:bg-[#2E1208] text-white text-sm font-medium rounded-xl transition-colors duration-150 mt-1 whitespace-nowrap"
+            className="flex items-center gap-2 px-4 py-2.5 bg-tear-primary hover:bg-tear-primary-dark text-white text-sm font-medium rounded-xl transition-colors duration-150 mt-1 whitespace-nowrap"
           >
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
               <path d="M6.5 1.5V11.5M1.5 6.5H11.5" stroke="white" strokeWidth="1.6" strokeLinecap="round" />
