@@ -12,10 +12,11 @@ import type { ResearchDoc } from "@/types/teardown";
 const MAX_VERSIONS = 5;
 
 export default function ResearchPage() {
-  const router         = useRouter();
-  const productName    = useSessionStore((s) => s.productName);
-  const sessionId      = useSessionStore((s) => s.sessionId);
-  const researchDoc    = useSessionStore((s) => s.researchDoc);
+  const router              = useRouter();
+  const productName         = useSessionStore((s) => s.productName);
+  const sessionId           = useSessionStore((s) => s.sessionId);
+  const researchDoc         = useSessionStore((s) => s.researchDoc);
+  const clearActiveSession  = useSessionStore((s) => s.clearActiveSession);
 
   const [ready, setReady]                     = useState(false);
   const [activeSection, setActiveSection]     = useState("exec_summary");
@@ -34,6 +35,10 @@ export default function ResearchPage() {
     const t = setTimeout(() => setReady(true), 50);
     return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    clearActiveSession();
+  }, [clearActiveSession]);
 
   useEffect(() => {
     if (ready && !productName) router.replace("/");
