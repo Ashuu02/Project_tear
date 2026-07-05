@@ -10,11 +10,15 @@ export default function ActiveSessionBar() {
   const clearActiveSession = useSessionStore((s) => s.clearActiveSession);
 
   if (!activeSession) return null;
-  if (pathname.startsWith("/pipeline/") || pathname.startsWith("/research/")) return null;
+  if (
+    pathname.startsWith("/pipeline/") ||
+    pathname.startsWith("/research/") ||
+    pathname.startsWith("/tier2/")
+  ) return null;
 
   function handleResume() {
     if (!activeSession) return;
-    router.push(`/pipeline/${activeSession.sessionId}`);
+    router.push(activeSession.resumePath);
   }
 
   function handleDismiss(e: React.MouseEvent) {

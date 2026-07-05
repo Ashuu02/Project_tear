@@ -18,18 +18,14 @@ export default function Tier2Page() {
   const tier1Answers    = useSessionStore((s) => s.tier1Answers);
   const setTier2Answers = useSessionStore((s) => s.setTier2Answers);
 
+  const setActiveSession    = useSessionStore((s) => s.setActiveSession);
+  const clearActiveSession  = useSessionStore((s) => s.clearActiveSession);
+  const setTier2Draft       = useSessionStore((s) => s.setTier2Draft);
+  const clearTier2Draft     = useSessionStore((s) => s.clearTier2Draft);
+
   const [ready, setReady]   = useState(false);
-  const [step, setStep]     = useState(0); // 0-indexed
+  const [step, setStep]     = useState(0);
   const [answers, setAnswers] = useState<Tier2Answers>({});
-
-  useEffect(() => {
-    const t = setTimeout(() => setReady(true), 50);
-    return () => clearTimeout(t);
-  }, []);
-
-  useEffect(() => {
-    if (ready && (!productName || !tier1Answers)) router.replace("/");
-  }, [ready, productName, tier1Answers, router]);
 
   const questions = useMemo(
     () => (tier1Answers ? selectTier2Questions(tier1Answers) : []),
@@ -37,6 +33,38 @@ export default function Tier2Page() {
   );
 
   const TOTAL = questions.length;
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const { tier2Step: savedStep, tier2AnswersDraft: savedAnswers } = useSessionStore.getState();
+      if (savedStep > 0 || Object.keys(savedAnswers).length > 0) {
+        setStep(savedStep);
+        setAnswers(savedAnswers);
+      }
+      setReady(true);
+    }, 50);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (ready && (!productName || !tier1Answers)) router.replace("/");
+  }, [ready, productName, tier1Answers, router]);
+
+  useEffect(() => {
+    if (!ready || !productName || !sessionId || !TOTAL) return;
+    setActiveSession({
+      sessionId,
+      productName,
+      stageLabel: `In-Depth Questions (${step + 1}/${TOTAL})`,
+      progress: Math.round(((step + 1) / TOTAL) * 100),
+      resumePath: `/tier2/${sessionId}`,
+    });
+    setTier2Draft(step, answers);
+  }, [ready, productName, sessionId, step, answers, TOTAL, setActiveSession, setTier2Draft]);
+
+  useEffect(() => {
+    return () => clearActiveSession();
+  }, [clearActiveSession]);
   const current = questions[step];
 
   const currentAnswer = answers[current?.id ?? ""];
@@ -69,6 +97,8 @@ export default function Tier2Page() {
       setStep((s) => s + 1);
       return;
     }
+    clearActiveSession();
+    clearTier2Draft();
     setTier2Answers(answers);
     router.push(`/context/${sessionId}`);
   }

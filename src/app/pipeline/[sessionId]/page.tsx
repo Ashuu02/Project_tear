@@ -69,7 +69,7 @@ export default function PipelinePage() {
   useEffect(() => {
     if (!ready || !productName) return;
 
-    setActiveSession({ sessionId, productName, stageLabel: "Starting pipeline…", progress: 5 });
+    setActiveSession({ sessionId, productName, stageLabel: "Starting pipeline…", progress: 5, resumePath: `/pipeline/${sessionId}` });
 
     const params = new URLSearchParams({
       product: productName,
@@ -104,7 +104,7 @@ export default function PipelinePage() {
                 "Document Agent": { stageLabel: "Building research document", progress: 80 },
               };
               const stage = stageMap[data.agent];
-              if (stage) setActiveSession({ sessionId, productName, ...stage });
+              if (stage) setActiveSession({ sessionId, productName, ...stage, resumePath: `/pipeline/${sessionId}` });
             } else if (data.status === "done") {
               updateAgentItem(data.agent, { status: "done", message: data.message, progress: undefined });
             } else if (data.status === "error") {
