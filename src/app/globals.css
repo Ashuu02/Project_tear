@@ -32,8 +32,14 @@ html, body {
   50%       { opacity: 0; }
 }
 
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
 @layer utilities {
   .text-balance { text-wrap: balance; }
+  .animate-slide-up { animation: slide-up 0.3s ease-out; }
 
   .spinner {
     width: 14px;

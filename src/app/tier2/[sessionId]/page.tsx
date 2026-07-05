@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useSessionStore } from "@/store/session";
 import type { Tier2Answers } from "@/store/session";
 import { selectTier2Questions } from "@/data/tier2Questions";
@@ -17,18 +18,14 @@ export default function Tier2Page() {
   const tier1Answers    = useSessionStore((s) => s.tier1Answers);
   const setTier2Answers = useSessionStore((s) => s.setTier2Answers);
 
+  const setActiveSession    = useSessionStore((s) => s.setActiveSession);
+  const clearActiveSession  = useSessionStore((s) => s.clearActiveSession);
+  const setTier2Draft       = useSessionStore((s) => s.setTier2Draft);
+  const clearTier2Draft     = useSessionStore((s) => s.clearTier2Draft);
+
   const [ready, setReady]   = useState(false);
-  const [step, setStep]     = useState(0); // 0-indexed
+  const [step, setStep]     = useState(0);
   const [answers, setAnswers] = useState<Tier2Answers>({});
-
-  useEffect(() => {
-    const t = setTimeout(() => setReady(true), 50);
-    return () => clearTimeout(t);
-  }, []);
-
-  useEffect(() => {
-    if (ready && (!productName || !tier1Answers)) router.replace("/");
-  }, [ready, productName, tier1Answers, router]);
 
   const questions = useMemo(
     () => (tier1Answers ? selectTier2Questions(tier1Answers) : []),
@@ -36,6 +33,38 @@ export default function Tier2Page() {
   );
 
   const TOTAL = questions.length;
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const { tier2Step: savedStep, tier2AnswersDraft: savedAnswers } = useSessionStore.getState();
+      if (savedStep > 0 || Object.keys(savedAnswers).length > 0) {
+        setStep(savedStep);
+        setAnswers(savedAnswers);
+      }
+      setReady(true);
+    }, 50);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (ready && (!productName || !tier1Answers)) router.replace("/");
+  }, [ready, productName, tier1Answers, router]);
+
+  useEffect(() => {
+    if (!ready || !productName || !sessionId || !TOTAL) return;
+    setActiveSession({
+      sessionId,
+      productName,
+      stageLabel: `In-Depth Questions (${step + 1}/${TOTAL})`,
+      progress: Math.round(((step + 1) / TOTAL) * 100),
+      resumePath: `/tier2/${sessionId}`,
+    });
+    setTier2Draft(step, answers);
+  }, [ready, productName, sessionId, step, answers, TOTAL, setActiveSession, setTier2Draft]);
+
+  useEffect(() => {
+    return () => clearActiveSession();
+  }, [clearActiveSession]);
   const current = questions[step];
 
   const currentAnswer = answers[current?.id ?? ""];
@@ -68,6 +97,8 @@ export default function Tier2Page() {
       setStep((s) => s + 1);
       return;
     }
+    clearActiveSession();
+    clearTier2Draft();
     setTier2Answers(answers);
     router.push(`/context/${sessionId}`);
   }
@@ -95,13 +126,13 @@ export default function Tier2Page() {
     <div className="min-h-screen bg-tear-bg flex flex-col font-dm-sans text-tear-text">
       {/* Nav */}
       <nav className="flex items-center justify-between px-12 py-[22px] border-b border-[#F0E8DF] animate-fade-in">
-        <div className="flex items-center gap-2.5">
+        <Link href="/" className="flex items-center gap-2.5">
           <svg width="20" height="20" viewBox="0 0 22 22" fill="none">
             <circle cx="9.5" cy="9.5" r="7" stroke="#C2451E" strokeWidth="1.7" fill="none" />
             <line x1="14.8" y1="14.8" x2="20" y2="20" stroke="#C2451E" strokeWidth="1.7" strokeLinecap="round" />
           </svg>
           <span className="font-lora text-[19px] font-semibold tracking-tight text-tear-text">Tear</span>
-        </div>
+        </Link>
         <div className="flex items-center gap-3">
           <span className="text-[12px] font-medium text-tear-primary bg-[#FBF0EB] border border-[#F0C9B8] px-3 py-1 rounded-full">
             In-Depth Questions

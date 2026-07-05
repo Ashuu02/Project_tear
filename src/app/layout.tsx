@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Lora, DM_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
+import ActiveSessionBar from "@/components/ActiveSessionBar";
 
 const lora = Lora({
   subsets: ["latin"],
@@ -37,6 +38,7 @@ export default function RootLayout({
     <html lang="en" className={`${lora.variable} ${dmSans.variable} ${ibmPlexMono.variable}`}>
       <body className="font-dm-sans antialiased bg-tear-bg text-tear-text">
         {children}
+        <ActiveSessionBar />
       </body>
     </html>
   );
