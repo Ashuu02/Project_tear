@@ -6,6 +6,8 @@ import { tavilySearch, buildGroqSearchQueries } from "@/lib/tavily";
 import type { ResearchDoc } from "@/types/teardown";
 import { sleep, getMockResearchDoc } from "@/data/mockPipeline";
 import { trackTokens } from "@/lib/tokenTracker";
+import { recordTeardownStart, recordTeardownComplete, recordTeardownError } from "@/lib/adminTeardowns";
+import { getProductCategory } from "@/lib/productCategory";
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
@@ -181,6 +183,10 @@ export async function GET(req: NextRequest) {
     async start(controller) {
       function send(payload: object) {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+      }
+
+      if (!DEMO_MODE) {
+        await recordTeardownStart(sessionId, productName, getProductCategory(productName), modelParam, tier1, tier2);
       }
 
       try {
@@ -430,6 +436,10 @@ export async function GET(req: NextRequest) {
           message: `${docData.sections?.length ?? 12} sections generated`, progress: 100 });
         send({ type: "done", document: docData });
 
+        if (!DEMO_MODE) {
+          await recordTeardownComplete(sessionId, docData, crawlCount);
+        }
+
       } catch (err) {
         const raw = err instanceof Error ? err.message : String(err);
         let friendly = raw;
@@ -440,6 +450,9 @@ export async function GET(req: NextRequest) {
           friendly = `API key error for the selected model. Check your .env file and make sure the key is valid.`;
         }
         send({ type: "error", message: friendly });
+        if (!DEMO_MODE) {
+          await recordTeardownError(sessionId, friendly);
+        }
       } finally {
         controller.close();
       }
