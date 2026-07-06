@@ -107,9 +107,15 @@ export default function ContextPage() {
   async function proceed(skip: boolean) {
     setIsSubmitting(true);
     try {
+      if (skip) {
+        setUserContext(null);
+        router.push(`/pipeline/${sessionId}`);
+        return;
+      }
+
       let combinedText = textValue.trim();
 
-      if (!skip && file) {
+      if (file) {
         try {
           const formData = new FormData();
           formData.append("file", file);
@@ -124,7 +130,7 @@ export default function ContextPage() {
             }
           }
         } catch {
-          // Non-fatal — proceed without file text
+          // Non-fatal - proceed without file text
         }
       }
 
@@ -193,11 +199,11 @@ export default function ContextPage() {
               Any additional context you&apos;d like to share?
             </h2>
             <p className="text-[15px] font-normal leading-[1.6] text-tear-muted">
-              This is optional — paste notes, upload a document, or share anything that helps the agent research better.
+              This is optional. Paste notes, upload a document, or share anything that helps the agent research better.
             </p>
           </div>
 
-          {/* Area 1 — Free text */}
+          {/* Area 1 - Free text */}
           <div className="flex flex-col gap-2 animate-fade-up-3">
             <div className="flex items-center justify-between">
               <span className="text-[12px] font-semibold tracking-[0.1em] uppercase text-[#A89890]">Notes & Context</span>
@@ -227,7 +233,7 @@ export default function ContextPage() {
             </div>
           </div>
 
-          {/* Area 2 — File upload */}
+          {/* Area 2 - File upload */}
           <div className="flex flex-col gap-2 animate-fade-up-4">
             <span className="text-[12px] font-semibold tracking-[0.1em] uppercase text-[#A89890]">Upload a Document</span>
 
@@ -293,7 +299,7 @@ export default function ContextPage() {
             )}
           </div>
 
-          {/* Area 3 — Info banner */}
+          {/* Area 3 - Info banner */}
           <div className="flex items-start gap-3 px-4 py-3.5 bg-[#F5EFE4] border border-tear-border rounded-xl animate-fade-up-4">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0 mt-0.5" stroke="#7C6E68" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="8" cy="8" r="6.5" />
@@ -315,7 +321,7 @@ export default function ContextPage() {
           disabled={isSubmitting}
           className="text-[14px] font-medium text-tear-muted hover:text-tear-text transition-colors duration-150"
         >
-          Skip — go straight to analysis
+          Skip to analysis
         </button>
 
         <button

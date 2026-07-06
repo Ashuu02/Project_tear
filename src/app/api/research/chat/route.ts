@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateText } from "ai";
 import type { LanguageModelUsage } from "ai";
 import { anthropic } from "@/lib/anthropic";
+import { getDocumentModel, googleTools, type ModelProvider } from "@/lib/providers";
+import { tavilySearch } from "@/lib/tavily";
 import { trackTokens } from "@/lib/tokenTracker";
 import type { ResearchDoc } from "@/types/teardown";
 
@@ -16,22 +18,15 @@ interface ChatRequestBody {
   message: string;
   researchDoc: ResearchDoc;
   history: ChatMessage[];
+  model?: ModelProvider;
 }
 
 function detectReCrawlIntent(message: string): boolean {
   const lower = message.toLowerCase();
   const reCrawlKeywords = [
-    "re-research",
-    "re-crawl",
-    "search for",
-    "find more",
-    "look up",
-    "look for",
-    "google",
-    "search the web",
-    "find data",
-    "find information",
-    "find out",
+    "re-research", "re-crawl", "search for", "find more", "look up",
+    "look for", "google", "search the web", "find data",
+    "find information", "find out",
   ];
   return reCrawlKeywords.some((kw) => lower.includes(kw));
 }
@@ -49,7 +44,7 @@ function parseSectionUpdate(text: string): { sectionId: string; newContent: stri
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as ChatRequestBody;
-    const { sessionId, productName, message, researchDoc, history } = body;
+    const { sessionId, productName, message, researchDoc, history, model = "claude" } = body;
 
     if (!message || !productName) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -69,7 +64,6 @@ Be direct and specific. Use the existing research as your primary source.
 Only call web search if the user explicitly asks to find new information.
 Minimize tokens — be concise.`;
 
-    // Build message history for the model
     const chatHistory: Array<{ role: "user" | "assistant"; content: string }> = [
       ...(history ?? []).map((h) => ({ role: h.role, content: h.content })),
       { role: "user", content: message },
@@ -79,23 +73,61 @@ Minimize tokens — be concise.`;
     let usage: LanguageModelUsage | undefined;
 
     if (isReCrawl) {
-      // Re-crawl mode: use claude-sonnet-4-6 with web search
-      const result = await generateText({
-        model: anthropic("claude-sonnet-4-6"),
-        maxOutputTokens: 1500,
-        tools: {
-          webSearch: anthropic.tools.webSearch_20250305({ maxUses: 3 }),
-        },
-        system: systemPrompt,
-        messages: chatHistory,
-      });
-      resultText = result.text;
-      usage = result.usage;
+      // ── Re-crawl: fetch fresh web data then answer ─────────────────────────
+      if (model === "gemini") {
+        // Gemini: native Google Search grounding
+        const result = await generateText({
+          model: getDocumentModel("gemini"),
+          maxOutputTokens: 600,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          tools: { google_search: googleTools.googleSearch({}) as any },
+          system: systemPrompt,
+          messages: chatHistory,
+        });
+        resultText = result.text;
+        usage = result.usage;
+
+      } else if (model === "groq") {
+        // Groq: Tavily search then Groq synthesis
+        const tavilyResults = await tavilySearch(`${productName} ${message}`, 3);
+        const context = tavilyResults
+          .map((r) => `SOURCE: ${r.url}\nTITLE: ${r.title}\nSNIPPET: ${r.content}`)
+          .join("\n\n---\n\n");
+
+        const augmentedHistory: Array<{ role: "user" | "assistant"; content: string }> = [
+          ...chatHistory.slice(0, -1),
+          {
+            role: "user",
+            content: `${message}\n\nFRESH WEB RESEARCH:\n${context || "No additional results found."}`,
+          },
+        ];
+        const result = await generateText({
+          model: getDocumentModel("groq"),
+          maxOutputTokens: 600,
+          system: systemPrompt,
+          messages: augmentedHistory,
+        });
+        resultText = result.text;
+        usage = result.usage;
+
+      } else {
+        // Claude: native web search tool
+        const result = await generateText({
+          model: anthropic("claude-sonnet-4-6"),
+          maxOutputTokens: 600,
+          tools: { webSearch: anthropic.tools.webSearch_20250305({ maxUses: 3 }) },
+          system: systemPrompt,
+          messages: chatHistory,
+        });
+        resultText = result.text;
+        usage = result.usage;
+      }
+
     } else {
-      // Rewrite mode: use claude-haiku-4-5-20251001 (no web search, faster & cheaper)
+      // ── Regular chat/rewrite: use selected model directly ─────────────────
       const result = await generateText({
-        model: anthropic("claude-haiku-4-5-20251001"),
-        maxOutputTokens: 1200,
+        model: getDocumentModel(model),
+        maxOutputTokens: 500,
         system: systemPrompt,
         messages: chatHistory,
       });
@@ -103,18 +135,10 @@ Minimize tokens — be concise.`;
       usage = result.usage;
     }
 
-    // Track tokens
     if (usage) {
-      await trackTokens(
-        sessionId,
-        productName,
-        "chatbot",
-        usage.inputTokens,
-        usage.outputTokens
-      );
+      await trackTokens(sessionId, productName, "chatbot", usage.inputTokens, usage.outputTokens);
     }
 
-    // Parse section update
     const sectionUpdate = parseSectionUpdate(resultText);
 
     return NextResponse.json({

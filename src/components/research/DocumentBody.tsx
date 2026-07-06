@@ -273,7 +273,7 @@ export default function DocumentBody({
   if (!researchDoc) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <span className="text-sm text-tear-muted animate-pulse">Document not found — run the pipeline first.</span>
+        <span className="text-sm text-tear-muted animate-pulse">Document not found. Run the pipeline first.</span>
       </div>
     );
   }

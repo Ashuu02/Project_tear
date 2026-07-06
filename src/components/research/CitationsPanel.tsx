@@ -8,9 +8,9 @@ interface CitationsPanelProps {
 }
 
 const FALLBACK: TeardownSource[] = [
-  { num: 1, domain: "product site",         title: "Official product site — pricing, features, changelog",        url: "#", usedIn: "Exec Summary, Product UX" },
-  { num: 2, domain: "techcrunch.com",        title: "Funding announcement — valuation & investors",                url: "#", usedIn: "Exec Summary, Financials" },
-  { num: 3, domain: "g2.com",               title: "User reviews — last 90 days",                                 url: "#", usedIn: "Product UX" },
+  { num: 1, domain: "product site",         title: "Official product site: pricing, features, changelog",        url: "#", usedIn: "Exec Summary, Product UX" },
+  { num: 2, domain: "techcrunch.com",        title: "Funding announcement: valuation & investors",                url: "#", usedIn: "Exec Summary, Financials" },
+  { num: 3, domain: "g2.com",               title: "User reviews, last 90 days",                                  url: "#", usedIn: "Product UX" },
   { num: 4, domain: "reddit.com",           title: "Community posts analysis",                                     url: "#", usedIn: "Product UX, Community" },
   { num: 5, domain: "news.ycombinator.com", title: "Engineering deep-dive discussion",                             url: "#", usedIn: "Tech Architecture" },
   { num: 6, domain: "gartner.com",          title: "Market Forecast 2024",                                         url: "#", usedIn: "Market & Competition" },
@@ -20,7 +20,7 @@ function getFaviconUrl(domain: string): string {
   // Clean domain for favicon fetch
   const cleanDomain = domain.replace(/^www\./, "");
   if (!cleanDomain.includes(".")) {
-    // Generic domain like "product site" — no favicon
+    // Generic domain like "product site" - no favicon
     return "";
   }
   return `https://www.google.com/s2/favicons?domain=${cleanDomain}&sz=16`;

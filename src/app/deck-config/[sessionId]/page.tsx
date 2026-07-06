@@ -136,7 +136,7 @@ export default function DeckConfigPage() {
           Build your deck
         </h1>
         <p className="text-[15px] text-tear-muted max-w-[460px] leading-relaxed">
-          Configure how you want the deck to look and feel — we&apos;ll generate it slide by slide.
+          Configure how you want the deck to look and feel. We&apos;ll generate it slide by slide.
         </p>
       </div>
 
@@ -149,7 +149,7 @@ export default function DeckConfigPage() {
             <div className="flex flex-col gap-4">
               <div>
                 <p className="text-sm font-semibold text-tear-text">Number of slides</p>
-                <p className="text-[13px] text-[#A89890] mt-1">More slides means more depth — recommended: 10</p>
+                <p className="text-[13px] text-[#A89890] mt-1">More slides means more depth (recommended: 10)</p>
               </div>
               <div className="flex gap-2.5">
                 {([5, 10, 15, 20] as const).map((n) => (

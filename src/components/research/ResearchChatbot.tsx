@@ -37,7 +37,8 @@ function stripSectionUpdate(reply: string): string {
 }
 
 export default function ResearchChatbot({ productName, researchDoc, onSectionUpdate }: ResearchChatbotProps) {
-  const sessionId = useSessionStore((s) => s.sessionId);
+  const sessionId     = useSessionStore((s) => s.sessionId);
+  const selectedModel = useSessionStore((s) => s.selectedModel);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput]       = useState("");
@@ -78,6 +79,7 @@ export default function ResearchChatbot({ productName, researchDoc, onSectionUpd
           message: trimmed,
           researchDoc,
           history: messages,
+          model: selectedModel,
         }),
       });
 

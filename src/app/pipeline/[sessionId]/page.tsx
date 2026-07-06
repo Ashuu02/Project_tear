@@ -12,8 +12,8 @@ import { useTeardownHistory, getProductCategory } from "@/store/teardownHistory"
 
 const INITIAL_FEED: FeedItem[] = [
   { id: "q", agent: "Question Agent", message: "Analyzing product…",            status: "queued" },
-  { id: "c", agent: "Crawler Agent",  message: "Web research — queued",          status: "queued" },
-  { id: "d", agent: "Document Agent", message: "Synthesizing teardown — queued", status: "queued" },
+  { id: "c", agent: "Crawler Agent",  message: "Web research (queued)",          status: "queued" },
+  { id: "d", agent: "Document Agent", message: "Synthesizing teardown (queued)", status: "queued" },
 ];
 
 export default function PipelinePage() {
@@ -23,9 +23,10 @@ export default function PipelinePage() {
   const tier1Answers   = useSessionStore((s) => s.tier1Answers);
   const tier2Answers   = useSessionStore((s) => s.tier2Answers);
   const userContext    = useSessionStore((s) => s.userContext);
-  const setResearchDoc      = useSessionStore((s) => s.setResearchDoc);
-  const setActiveSession    = useSessionStore((s) => s.setActiveSession);
-  const clearActiveSession  = useSessionStore((s) => s.clearActiveSession);
+  const selectedModel      = useSessionStore((s) => s.selectedModel);
+  const setResearchDoc     = useSessionStore((s) => s.setResearchDoc);
+  const setActiveSession   = useSessionStore((s) => s.setActiveSession);
+  const clearActiveSession = useSessionStore((s) => s.clearActiveSession);
   const addEntry = useTeardownHistory((s) => s.addEntry);
 
   const [ready, setReady]                   = useState(false);
@@ -76,9 +77,9 @@ export default function PipelinePage() {
       sessionId,
       tier1: JSON.stringify(tier1Answers ?? {}),
       tier2: JSON.stringify(tier2Answers ?? {}),
+      model: selectedModel ?? "claude",
     });
 
-    // Pass user context if available
     if (userContext?.text) {
       params.set("userContext", userContext.text);
     }
@@ -158,9 +159,11 @@ export default function PipelinePage() {
           }
           case "error": {
             setFeedItems((prev) =>
-              prev.map((item) =>
-                item.status === "active" ? { ...item, status: "error", message: data.message } : item
-              )
+              prev.map((item) => {
+                if (item.status === "active") return { ...item, status: "error" as const, message: data.message };
+                if (item.status === "queued") return { ...item, status: "error" as const, message: "Cancelled" };
+                return item;
+              })
             );
             es.close();
             break;
@@ -174,7 +177,7 @@ export default function PipelinePage() {
     };
 
     return () => es.close();
-  }, [ready, productName, sessionId, tier1Answers, tier2Answers, userContext, setResearchDoc, setActiveSession, clearActiveSession, router]);
+  }, [ready, productName, sessionId, tier1Answers, tier2Answers, userContext, selectedModel, setResearchDoc, setActiveSession, clearActiveSession, addEntry, router]);
 
   if (!ready || !productName) {
     return (

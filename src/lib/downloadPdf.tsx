@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
 
 function ResearchPdfDoc({ productName, doc }: { productName: string; doc: ResearchDoc }) {
   return (
-    <Document title={`${productName} — Product Teardown`} author="Tear">
+    <Document title={`${productName} | Product Teardown`} author="Tear">
       {/* Cover */}
       <Page size="A4" style={styles.coverPage}>
         <View style={styles.coverAccent} />
@@ -169,7 +169,7 @@ function ResearchPdfDoc({ productName, doc }: { productName: string; doc: Resear
         <View style={styles.divider} />
         {doc.sources.map((source) => (
           <Text key={source.num} style={styles.sourceItem}>
-            [{source.num}] {source.title} — {source.domain}
+            [{source.num}] {source.title} | {source.domain}
           </Text>
         ))}
         <View style={styles.pageFooter}>
