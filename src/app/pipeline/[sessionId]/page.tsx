@@ -23,8 +23,10 @@ export default function PipelinePage() {
   const tier1Answers   = useSessionStore((s) => s.tier1Answers);
   const tier2Answers   = useSessionStore((s) => s.tier2Answers);
   const userContext    = useSessionStore((s) => s.userContext);
-  const selectedModel  = useSessionStore((s) => s.selectedModel);
-  const setResearchDoc = useSessionStore((s) => s.setResearchDoc);
+  const selectedModel      = useSessionStore((s) => s.selectedModel);
+  const setResearchDoc     = useSessionStore((s) => s.setResearchDoc);
+  const setActiveSession   = useSessionStore((s) => s.setActiveSession);
+  const clearActiveSession = useSessionStore((s) => s.clearActiveSession);
   const addEntry = useTeardownHistory((s) => s.addEntry);
 
   const [ready, setReady]                   = useState(false);
@@ -55,6 +57,7 @@ export default function PipelinePage() {
     esRef.current?.close();
     esRef.current = null;
     setStopped(true);
+    clearActiveSession();
     setFeedItems((prev) =>
       prev.map((item) =>
         item.status === "active" || item.status === "queued"
@@ -66,6 +69,8 @@ export default function PipelinePage() {
 
   useEffect(() => {
     if (!ready || !productName) return;
+
+    setActiveSession({ sessionId, productName, stageLabel: "Starting pipeline…", progress: 5, resumePath: `/pipeline/${sessionId}` });
 
     const params = new URLSearchParams({
       product: productName,
@@ -94,6 +99,13 @@ export default function PipelinePage() {
                 message: data.message,
                 ...(typeof data.progress === "number" ? { progress: data.progress } : {}),
               });
+              const stageMap: Record<string, { stageLabel: string; progress: number }> = {
+                "Question Agent": { stageLabel: "Validating product", progress: 15 },
+                "Crawler Agent":  { stageLabel: "Gathering web sources", progress: 40 },
+                "Document Agent": { stageLabel: "Building research document", progress: 80 },
+              };
+              const stage = stageMap[data.agent];
+              if (stage) setActiveSession({ sessionId, productName, ...stage, resumePath: `/pipeline/${sessionId}` });
             } else if (data.status === "done") {
               updateAgentItem(data.agent, { status: "done", message: data.message, progress: undefined });
             } else if (data.status === "error") {
@@ -129,6 +141,7 @@ export default function PipelinePage() {
             break;
           }
           case "done": {
+            clearActiveSession();
             const doc = data.document as ResearchDoc;
             setResearchDoc(doc);
             addEntry({
@@ -164,7 +177,7 @@ export default function PipelinePage() {
     };
 
     return () => es.close();
-  }, [ready, productName, sessionId, tier1Answers, tier2Answers, userContext, selectedModel, setResearchDoc, addEntry, router]);
+  }, [ready, productName, sessionId, tier1Answers, tier2Answers, userContext, selectedModel, setResearchDoc, setActiveSession, clearActiveSession, addEntry, router]);
 
   if (!ready || !productName) {
     return (

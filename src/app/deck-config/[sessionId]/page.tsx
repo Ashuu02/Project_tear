@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useSessionStore } from "@/store/session";
 import type { DeckData } from "@/types/teardown";
 
@@ -116,13 +117,13 @@ export default function DeckConfigPage() {
     <div className="min-h-screen bg-tear-bg flex flex-col font-dm-sans text-tear-text">
       {/* Navbar */}
       <nav className="flex items-center justify-between px-10 py-[18px] border-b border-[#EDE5DC] flex-shrink-0">
-        <div className="flex items-center gap-2.5">
+        <Link href="/" className="flex items-center gap-2.5">
           <svg width="20" height="20" viewBox="0 0 22 22" fill="none">
             <circle cx="9.5" cy="9.5" r="7" stroke="#C2451E" strokeWidth="1.7" fill="none" />
             <line x1="14.8" y1="14.8" x2="20" y2="20" stroke="#C2451E" strokeWidth="1.7" strokeLinecap="round" />
           </svg>
           <span className="font-lora text-[19px] font-semibold tracking-tight text-tear-text">Tear</span>
-        </div>
+        </Link>
         <span className="text-[13px] text-tear-muted font-normal">
           {productName} Teardown · Build your deck
         </span>
