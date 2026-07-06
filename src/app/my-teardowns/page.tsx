@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Navbar from "@/components/landing/Navbar";
 import { useTeardownHistory, type TeardownHistoryEntry } from "@/store/teardownHistory";
+import { useSessionStore } from "@/store/session";
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
@@ -106,15 +108,21 @@ function StatusBadge({ status }: { status: TeardownHistoryEntry["status"] }) {
   );
 }
 
-function TeardownCard({ entry }: { entry: TeardownHistoryEntry }) {
+function TeardownCard({ entry, onOpen }: { entry: TeardownHistoryEntry; onOpen: (entry: TeardownHistoryEntry) => void }) {
   const bg = avatarBg(entry.productName);
   const initial = entry.productName.charAt(0).toUpperCase();
   const progress = entry.totalSources
     ? Math.round((entry.sourcesCount / entry.totalSources) * 100)
     : 0;
+  const openable = entry.status === "complete" && !!entry.researchDoc;
 
   return (
-    <div className="bg-[#F0E8DC] border border-tear-border rounded-2xl p-5 flex flex-col gap-3.5">
+    <div
+      onClick={openable ? () => onOpen(entry) : undefined}
+      className={`bg-[#F0E8DC] border border-tear-border rounded-2xl p-5 flex flex-col gap-3.5 ${
+        openable ? "cursor-pointer hover:border-tear-primary/40 transition-colors duration-150" : ""
+      }`}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-3 min-w-0">
           <div
@@ -171,7 +179,10 @@ function TeardownCard({ entry }: { entry: TeardownHistoryEntry }) {
               <span className="text-[12px] font-medium text-tear-primary">
                 {entry.sourcesCount} sources
               </span>
-              <span className="text-[12px] text-tear-muted">{timeAgo(entry.createdAt)}</span>
+              <span className="text-[12px] text-tear-muted flex items-center gap-1.5">
+                {timeAgo(entry.createdAt)}
+                {openable && <span className="font-medium text-tear-primary">· View →</span>}
+              </span>
             </>
           )}
         </div>
@@ -204,10 +215,22 @@ function NewTeardownCard() {
 }
 
 export default function MyTeardownsPage() {
+  const router = useRouter();
   const { entries: realEntries } = useTeardownHistory();
+  const loadFromHistory = useSessionStore((s) => s.loadFromHistory);
   const [activeFilter, setActiveFilter] = useState<FilterTab>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [hydrated, setHydrated] = useState(false);
+
+  function handleOpenEntry(entry: TeardownHistoryEntry) {
+    loadFromHistory({
+      sessionId: entry.sessionId,
+      productName: entry.productName,
+      researchDoc: entry.researchDoc,
+      deckData: entry.deckData,
+    });
+    router.push(`/research/${entry.sessionId}`);
+  }
 
   useEffect(() => {
     setHydrated(true);
@@ -322,7 +345,7 @@ export default function MyTeardownsPage() {
         ) : (
           <div className="grid grid-cols-3 gap-4">
             {filtered.map((entry) => (
-              <TeardownCard key={entry.sessionId} entry={entry} />
+              <TeardownCard key={entry.sessionId} entry={entry} onOpen={handleOpenEntry} />
             ))}
             <NewTeardownCard />
           </div>

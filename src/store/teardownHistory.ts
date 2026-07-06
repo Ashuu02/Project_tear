@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { ResearchDoc, DeckData } from "@/types/teardown";
 
 export type TeardownStatus = "complete" | "in-progress" | "draft";
 
@@ -13,6 +14,8 @@ export interface TeardownHistoryEntry {
   totalSources?: number;
   createdAt: string;
   stepSaved?: number;
+  researchDoc?: ResearchDoc;
+  deckData?: DeckData;
 }
 
 const PRODUCT_CATEGORIES: Record<string, string> = {
@@ -45,7 +48,7 @@ export const useTeardownHistory = create<TeardownHistoryState>()(
       addEntry: (entry) =>
         set((s) => ({
           entries: s.entries.some((e) => e.sessionId === entry.sessionId)
-            ? s.entries
+            ? s.entries.map((e) => (e.sessionId === entry.sessionId ? entry : e))
             : [entry, ...s.entries],
         })),
       updateEntry: (sessionId, patch) =>
