@@ -152,6 +152,7 @@ export default function PipelinePage() {
               description: doc?.sections?.[0]?.keyInsight?.slice(0, 130) ?? "",
               sourcesCount: crawlCountRef.current,
               createdAt: new Date().toISOString(),
+              researchDoc: doc,
             });
             es.close();
             router.push(`/research/${sessionId}`);

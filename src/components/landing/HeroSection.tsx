@@ -18,7 +18,7 @@ function getSuggestions(input: string): string[] {
 
 export default function HeroSection() {
   const router = useRouter();
-  const { setProductName, selectedModel, setSelectedModel } = useSessionStore();
+  const { selectedModel, setSelectedModel, startNewTeardown } = useSessionStore();
   const [value, setValue]           = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [highlighted, setHighlighted] = useState(-1);
@@ -44,7 +44,7 @@ export default function HeroSection() {
   function handleStart(name?: string) {
     const trimmed = (name ?? value).trim();
     if (!trimmed) return;
-    setProductName(trimmed);
+    startNewTeardown(trimmed);
     setSuggestions([]);
     router.push("/intake");
   }

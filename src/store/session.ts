@@ -53,6 +53,8 @@ interface SessionState {
   setActiveSession: (s: ActiveSession) => void;
   clearActiveSession: () => void;
   resetSession: () => void;
+  startNewTeardown: (productName: string) => void;
+  loadFromHistory: (entry: { sessionId: string; productName: string; researchDoc?: ResearchDoc; deckData?: DeckData }) => void;
 }
 
 export const useSessionStore = create<SessionState>()(
@@ -83,6 +85,34 @@ export const useSessionStore = create<SessionState>()(
       setDeckData: (deck) => set({ deckData: deck }),
       setActiveSession: (s) => set({ activeSession: s }),
       clearActiveSession: () => set({ activeSession: null }),
+      startNewTeardown: (name) =>
+        set({
+          sessionId: generateSessionId(),
+          productName: name,
+          tier1Answers: null,
+          tier2Answers: null,
+          tier2Step: 0,
+          tier2AnswersDraft: {},
+          userContext: null,
+          agentStatuses: {},
+          researchDoc: null,
+          deckData: null,
+          activeSession: null,
+        }),
+      loadFromHistory: (entry) =>
+        set({
+          sessionId: entry.sessionId,
+          productName: entry.productName,
+          researchDoc: entry.researchDoc ?? null,
+          deckData: entry.deckData ?? null,
+          tier1Answers: null,
+          tier2Answers: null,
+          tier2Step: 0,
+          tier2AnswersDraft: {},
+          userContext: null,
+          agentStatuses: {},
+          activeSession: null,
+        }),
       resetSession: () =>
         set({
           sessionId: generateSessionId(),

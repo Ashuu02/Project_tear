@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSessionStore } from "@/store/session";
+import { useTeardownHistory } from "@/store/teardownHistory";
 import type { DeckData } from "@/types/teardown";
 
 interface DeckConfig {
@@ -43,6 +44,7 @@ export default function DeckConfigPage() {
   const setDeckData  = useSessionStore((s) => s.setDeckData);
 
   const deckData     = useSessionStore((s) => s.deckData);
+  const updateHistoryEntry = useTeardownHistory((s) => s.updateEntry);
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
@@ -92,6 +94,7 @@ export default function DeckConfigPage() {
       if (!res.ok) throw new Error("Deck generation failed");
       const data = (await res.json()) as DeckData;
       setDeckData(data);
+      updateHistoryEntry(sessionId, { deckData: data });
       router.push(`/deck/${sessionId}`);
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") return;
