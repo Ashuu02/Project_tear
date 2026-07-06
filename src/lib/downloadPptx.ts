@@ -1,10 +1,10 @@
 import type { DeckData } from "@/types/teardown";
 
-export async function downloadPptx(productName: string, deckData: DeckData) {
+export async function downloadPptx(productName: string, deckData: DeckData, sessionId?: string) {
   const res = await fetch("/api/pptx", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ productName, deckData }),
+    body: JSON.stringify({ productName, deckData, sessionId }),
   });
   if (!res.ok) throw new Error("PPTX generation failed");
   const blob = await res.blob();

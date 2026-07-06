@@ -50,7 +50,7 @@ export default function DeckPage() {
   async function handleDownloadPptx() {
     const data = deckData ?? getMockDeckData(productName);
     const { downloadPptx } = await import("@/lib/downloadPptx");
-    await downloadPptx(productName, data);
+    await downloadPptx(productName, data, sessionId);
   }
 
   if (!ready || !productName) {

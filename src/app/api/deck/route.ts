@@ -3,6 +3,8 @@ import { generateText } from "ai";
 import { anthropic } from "@/lib/anthropic";
 import type { DeckData, DeckSlide } from "@/types/teardown";
 import { getMockDeckData } from "@/data/mockPipeline";
+import { recordDeckData, uploadPptxFile } from "@/lib/adminTeardowns";
+import { buildPptxBuffer } from "@/lib/buildPptx";
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
@@ -28,10 +30,11 @@ interface DeckConfig {
 }
 
 export async function POST(req: NextRequest) {
-  const { productName, sections, config } = await req.json() as {
+  const { productName, sections, config, sessionId } = await req.json() as {
     productName: string;
     sections: Array<{ id: string; title: string; summary?: string; keyInsight?: string; stats?: Array<{ label: string; value: string }> }>;
     config?: DeckConfig;
+    sessionId?: string;
   };
 
   if (DEMO_MODE) {
@@ -57,6 +60,12 @@ export async function POST(req: NextRequest) {
   const deckData = extractJSON<DeckData>(deckText);
   if (deckData.slides?.[0]) {
     (deckData.slides[0] as DeckSlide).title = productName;
+  }
+
+  if (sessionId) {
+    await recordDeckData(sessionId, deckData);
+    const pptxBuffer = await buildPptxBuffer(productName, deckData);
+    await uploadPptxFile(sessionId, productName, pptxBuffer);
   }
 
   return NextResponse.json(deckData);

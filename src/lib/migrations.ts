@@ -13,6 +13,8 @@ export async function runMigrations(): Promise<{ success: boolean; message: stri
     question_bank: false,
     token_usage: false,
     session_tokens: false,
+    admin_teardowns: false,
+    teardown_pptx_files: false,
   };
 
   const createSQL = `
@@ -64,6 +66,34 @@ CREATE TABLE IF NOT EXISTS uploaded_files (
   valid BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT now()
 );
+
+CREATE TABLE IF NOT EXISTS admin_teardowns (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id TEXT NOT NULL UNIQUE,
+  product_name TEXT NOT NULL,
+  category TEXT,
+  selected_model TEXT,
+  status TEXT DEFAULT 'pending',
+  sources_count INTEGER DEFAULT 0,
+  tier1_answers JSONB,
+  tier2_answers JSONB,
+  research_doc JSONB,
+  deck_data JSONB,
+  error_message TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  completed_at TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS teardown_pptx_files (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id TEXT NOT NULL UNIQUE,
+  file_name TEXT NOT NULL,
+  file_path TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE admin_teardowns ENABLE ROW LEVEL SECURITY;
+ALTER TABLE teardown_pptx_files ENABLE ROW LEVEL SECURITY;
 `;
 
   // Check each table by attempting a select
@@ -72,9 +102,11 @@ CREATE TABLE IF NOT EXISTS uploaded_files (
     supabaseAdmin.from("token_usage").select("id").limit(1),
     supabaseAdmin.from("session_tokens").select("session_id").limit(1),
     supabaseAdmin.from("uploaded_files").select("id").limit(1),
+    supabaseAdmin.from("admin_teardowns").select("id").limit(1),
+    supabaseAdmin.from("teardown_pptx_files").select("id").limit(1),
   ]);
 
-  const tableNames = ["question_bank", "token_usage", "session_tokens", "uploaded_files"] as const;
+  const tableNames = ["question_bank", "token_usage", "session_tokens", "uploaded_files", "admin_teardowns", "teardown_pptx_files"] as const;
   let allExist = true;
 
   for (let i = 0; i < checks.length; i++) {

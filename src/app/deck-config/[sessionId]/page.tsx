@@ -88,7 +88,7 @@ export default function DeckConfigPage() {
       const res = await fetch("/api/deck", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productName, sections: summaryForDeck, config }),
+        body: JSON.stringify({ productName, sections: summaryForDeck, config, sessionId }),
         signal: controller.signal,
       });
       if (!res.ok) throw new Error("Deck generation failed");
