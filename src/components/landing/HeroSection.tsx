@@ -78,7 +78,7 @@ export default function HeroSection() {
   }
 
   return (
-    <main className="flex-1 flex flex-col items-center justify-center px-6 pb-20 pt-12 w-full max-w-[760px] mx-auto">
+    <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 pb-20 pt-12 w-full max-w-[760px] mx-auto">
       {/* Demo mode badge */}
       {DEMO_MODE && (
         <div className="flex items-center gap-1.5 mb-4 px-3 py-1.5 bg-[#FBF0EB] border border-tear-primary/30 rounded-full animate-fade-up-1">
@@ -121,7 +121,7 @@ export default function HeroSection() {
           />
 
           {suggestions.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-tear-border rounded-[10px] shadow-[0_8px_24px_rgba(0,0,0,0.08)] overflow-hidden z-50">
+            <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-tear-border rounded-[10px] shadow-[0_8px_24px_rgba(0,0,0,0.08)] overflow-y-auto max-h-60 z-50">
               {suggestions.map((s, i) => (
                 <button
                   key={s}
