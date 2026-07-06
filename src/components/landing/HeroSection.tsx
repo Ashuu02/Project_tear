@@ -4,9 +4,11 @@ import { useState, useEffect, useRef, KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useSessionStore } from "@/store/session";
 import { PRODUCTS } from "@/data/products";
+import { MODEL_META, type ModelProvider } from "@/lib/providers";
 
 const EXAMPLES = ["Notion", "Figma", "Shopify"];
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+const MODELS: ModelProvider[] = ["claude", "gemini", "groq"];
 
 function getSuggestions(input: string): string[] {
   if (!input.trim()) return [];
@@ -16,13 +18,15 @@ function getSuggestions(input: string): string[] {
 
 export default function HeroSection() {
   const router = useRouter();
-  const { setProductName } = useSessionStore();
+  const { setProductName, selectedModel, setSelectedModel } = useSessionStore();
   const [value, setValue]           = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [highlighted, setHighlighted] = useState(-1);
+  const suppressNextSuggest = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (suppressNextSuggest.current) { suppressNextSuggest.current = false; return; }
     setSuggestions(getSuggestions(value));
     setHighlighted(-1);
   }, [value]);
@@ -73,6 +77,7 @@ export default function HeroSection() {
   }
 
   function handleSelect(name: string) {
+    suppressNextSuggest.current = true;
     setValue(name);
     setSuggestions([]);
   }
@@ -83,7 +88,7 @@ export default function HeroSection() {
       {DEMO_MODE && (
         <div className="flex items-center gap-1.5 mb-4 px-3 py-1.5 bg-[#FBF0EB] border border-tear-primary/30 rounded-full animate-fade-up-1">
           <div className="w-1.5 h-1.5 rounded-full bg-tear-primary animate-pulse" />
-          <span className="text-[11px] font-medium text-tear-primary tracking-wide">Demo mode — no API credits used</span>
+          <span className="text-[11px] font-medium text-tear-primary tracking-wide">Demo mode (no API credits used)</span>
         </div>
       )}
 
@@ -97,13 +102,13 @@ export default function HeroSection() {
 
       {/* Headline */}
       <h1 className="font-lora text-[clamp(38px,5.5vw,58px)] font-medium leading-[1.18] text-center text-tear-text tracking-[-0.02em] mb-6 max-w-[680px] animate-fade-up-2">
-        Understand any product deeply&nbsp;— in minutes.
+        Understand any product deeply, in minutes.
       </h1>
 
       {/* Subtext */}
       <p className="text-[17px] font-light leading-[1.65] text-center text-tear-muted max-w-[560px] mb-13 animate-fade-up-3">
         AI agents crawl dozens of sources and assemble a citation-backed
-        teardown — so you walk in knowing the product better than most people
+        teardown, so you walk in knowing the product better than most people
         who work on it.
       </p>
 
@@ -149,6 +154,36 @@ export default function HeroSection() {
         >
           Build my teardown →
         </button>
+
+        {/* Model selector */}
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-medium text-tear-muted uppercase tracking-[0.1em]">AI Model</span>
+          <div className="flex items-center bg-[#F0E8E0] rounded-full p-[3px] gap-[2px]">
+            {MODELS.map((m) => {
+              const active = selectedModel === m;
+              const meta = MODEL_META[m];
+              return (
+                <button
+                  key={m}
+                  onClick={() => setSelectedModel(m)}
+                  title={meta.sub}
+                  className={`relative px-3.5 py-1.5 rounded-full text-[11.5px] font-medium transition-all duration-150 ${
+                    active
+                      ? "bg-white text-tear-text shadow-sm"
+                      : "text-tear-muted hover:text-tear-text"
+                  }`}
+                >
+                  {meta.label}
+                  {active && m !== "claude" && (
+                    <span className="absolute -top-1.5 -right-1 bg-[#22A05B] text-white text-[8px] font-bold px-1 rounded-full leading-[1.6]">
+                      FREE
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         {/* Example chips */}
         <div className="flex items-center gap-3 mt-1 flex-wrap justify-center">

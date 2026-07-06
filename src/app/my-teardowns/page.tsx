@@ -31,7 +31,7 @@ const DEMO_ENTRIES: TeardownHistoryEntry[] = [
     productName: "Shopify",
     category: "E-commerce",
     status: "in-progress",
-    description: "Checkout flow teardown — crawling merchant reviews and conversion benchmarks.",
+    description: "Checkout flow teardown: crawling merchant reviews and conversion benchmarks.",
     sourcesCount: 9,
     totalSources: 14,
     createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
@@ -50,7 +50,7 @@ const DEMO_ENTRIES: TeardownHistoryEntry[] = [
     productName: "Vision Pro",
     category: "Hardware",
     status: "draft",
-    description: "Intake saved — spatial computing bet awaiting your dimension selections.",
+    description: "Intake saved: spatial computing bet awaiting your dimension selections.",
     sourcesCount: 0,
     createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
     stepSaved: 2,
@@ -147,7 +147,7 @@ function TeardownCard({ entry }: { entry: TeardownHistoryEntry }) {
           </div>
           <div className="flex justify-between text-[12px]">
             <span className="font-medium text-tear-primary">
-              {entry.sourcesCount} / {entry.totalSources ?? "—"} sources
+              {entry.sourcesCount} / {entry.totalSources ?? "N/A"} sources
             </span>
             <span className="text-tear-muted">~4 min left</span>
           </div>

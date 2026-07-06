@@ -25,9 +25,9 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Tear — AI Product Teardowns",
+  title: "Tear | AI Product Teardowns",
   description:
-    "AI agents crawl dozens of sources and assemble a citation-backed teardown so you understand any product deeply — in minutes.",
+    "AI agents crawl dozens of sources and assemble a citation-backed teardown so you understand any product deeply, in minutes.",
 };
 
 export default function RootLayout({

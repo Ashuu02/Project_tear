@@ -25,7 +25,7 @@ const DEPTHS = [
 ];
 
 const QUESTIONS = [
-  { label: "Which dimensions matter most to you?",  sub: "Select all that apply — we'll focus the research agents on these areas." },
+  { label: "Which dimensions matter most to you?",  sub: "Select all that apply. We'll focus the research agents on these areas." },
   { label: "What's your primary research goal?",    sub: "This helps us frame the teardown from the right angle." },
   { label: "How deep should the research go?",      sub: "Choose the level of detail you need." },
 ];
