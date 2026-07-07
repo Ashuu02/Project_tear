@@ -17,6 +17,7 @@ export default function ResearchPage() {
   const sessionId           = useSessionStore((s) => s.sessionId);
   const researchDoc         = useSessionStore((s) => s.researchDoc);
   const clearActiveSession  = useSessionStore((s) => s.clearActiveSession);
+  const isViewingHistory    = useSessionStore((s) => s.isViewingHistory);
 
   const [ready, setReady]                     = useState(false);
   const [activeSection, setActiveSection]     = useState("exec_summary");
@@ -139,6 +140,7 @@ export default function ResearchPage() {
         sessionId={sessionId}
         onDownloadPdf={handleDownloadPdf}
         tokenCount={tokenCount}
+        isViewingHistory={isViewingHistory}
       />
       <div className="flex-1 flex overflow-hidden">
         <SectionSidebar

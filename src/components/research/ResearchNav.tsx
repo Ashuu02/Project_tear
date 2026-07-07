@@ -8,9 +8,10 @@ interface ResearchNavProps {
   sessionId: string;
   onDownloadPdf: () => void;
   tokenCount?: number;
+  isViewingHistory?: boolean;
 }
 
-export default function ResearchNav({ productName, sessionId, onDownloadPdf, tokenCount }: ResearchNavProps) {
+export default function ResearchNav({ productName, sessionId, onDownloadPdf, tokenCount, isViewingHistory }: ResearchNavProps) {
   const router = useRouter();
 
   return (
@@ -54,10 +55,10 @@ export default function ResearchNav({ productName, sessionId, onDownloadPdf, tok
         </button>
 
         <button
-          onClick={() => router.push(`/deck-config/${sessionId}`)}
+          onClick={() => router.push(isViewingHistory ? `/deck/${sessionId}` : `/deck-config/${sessionId}`)}
           className="flex items-center gap-1.5 px-4 py-[7px] text-[12px] font-semibold text-white bg-tear-primary rounded-lg hover:bg-tear-primary-dark transition-colors duration-150"
         >
-          Build Deck
+          {isViewingHistory ? "View Deck" : "Build Deck"}
           <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M2.5 7h9M8 3.5 11.5 7 8 10.5" />
           </svg>
