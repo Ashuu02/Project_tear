@@ -40,6 +40,7 @@ interface SessionState {
   researchDoc: ResearchDoc | null;
   deckData: DeckData | null;
   activeSession: ActiveSession | null;
+  isViewingHistory: boolean;
   setProductName: (name: string) => void;
   setSelectedModel: (model: ModelProvider) => void;
   setTier1Answers: (answers: Tier1Answers) => void;
@@ -72,6 +73,7 @@ export const useSessionStore = create<SessionState>()(
       researchDoc: null,
       deckData: null,
       activeSession: null,
+      isViewingHistory: false,
       setProductName: (name) => set({ productName: name }),
       setSelectedModel: (model) => set({ selectedModel: model }),
       setTier1Answers: (answers) => set({ tier1Answers: answers }),
@@ -98,6 +100,7 @@ export const useSessionStore = create<SessionState>()(
           researchDoc: null,
           deckData: null,
           activeSession: null,
+          isViewingHistory: false,
         }),
       loadFromHistory: (entry) =>
         set({
@@ -112,6 +115,7 @@ export const useSessionStore = create<SessionState>()(
           userContext: null,
           agentStatuses: {},
           activeSession: null,
+          isViewingHistory: true,
         }),
       resetSession: () =>
         set({
@@ -127,6 +131,7 @@ export const useSessionStore = create<SessionState>()(
           researchDoc: null,
           deckData: null,
           activeSession: null,
+          isViewingHistory: false,
         }),
     }),
     { name: "tear-session" }
