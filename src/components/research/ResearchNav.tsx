@@ -15,7 +15,7 @@ export default function ResearchNav({ productName, sessionId, onDownloadPdf, tok
   const router = useRouter();
 
   return (
-    <nav className="flex items-center justify-between px-10 py-[18px] border-b border-[#EDE5DC] flex-shrink-0 bg-tear-bg z-10">
+    <nav className="sticky top-0 z-20 flex items-center justify-between px-10 py-[18px] border-b border-[#EDE5DC] flex-shrink-0 bg-tear-bg">
       <Link href="/" className="flex items-center gap-2.5">
         <svg width="20" height="20" viewBox="0 0 22 22" fill="none">
           <circle cx="9.5" cy="9.5" r="7" stroke="#C2451E" strokeWidth="1.7" fill="none" />
