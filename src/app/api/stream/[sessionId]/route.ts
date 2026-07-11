@@ -125,13 +125,9 @@ ${userContext ? `USER CONTEXT: ${userContext}\n` : ""}
 Output numbers, names, dates only. No prose. Cover: pricing, funding, reviews, competitors, tech, market size.`;
 }
 
-function buildDocPrompt(productName: string, focusAreas: string, tier1: { goal?: string; depth?: string }, tier2Context: string, userContext: string, research: string): string {
-  return `Product analyst. Teardown of "${productName}" as raw JSON only — no markdown, no backticks.
-
-RESEARCH:
-${research}
-
-FOCUS: ${focusAreas} | goal=${tier1.goal ?? "general"}${userContext ? ` | ${userContext}` : ""}
+// Static portion of the doc prompt — identical across all teardowns so Anthropic can cache it.
+// [PRODUCT] is a placeholder replaced at runtime via the dynamic part below.
+const DOC_STATIC_PROMPT = `You are a product analyst. Output raw JSON only — no markdown, no backticks, no explanation.
 
 RULES:
 - content: 1 paragraph, 35-50 words, real data only (numbers/names/dates)
@@ -140,22 +136,32 @@ RULES:
 - tables: 2-3 rows, all cells filled
 - chartData: real estimates, not 0. Mark as "est." if guessing.
 - Escape: \\n for newlines, \\" for quotes.
+- Replace [PRODUCT] with the actual product name throughout.
 
-JSON:
+OUTPUT THIS EXACT JSON STRUCTURE:
 {"sections":[
 {"id":"exec_summary","title":"Executive Summary","content":"...","keyInsight":"...","stats":[{"label":"Founded","value":"..."},{"label":"Valuation","value":"..."},{"label":"Users","value":"..."}],"bullets":["...","...","..."]},
 {"id":"product_ux","title":"Product & UX Analysis","content":"...","keyInsight":"...","stats":[{"label":"G2 Rating","value":"..."},{"label":"App Store","value":"..."},{"label":"Top Issue","value":"..."}],"bullets":["...","...","..."],"tables":[{"id":"features","title":"Feature Comparison","headers":["Feature","Free","Pro","Enterprise"],"rows":[["Storage","...","...","..."],["API","...","...","..."],["Support","...","...","..."]]}]},
 {"id":"business_model","title":"Business Model & Revenue","content":"...","keyInsight":"...","stats":[{"label":"ARR","value":"..."},{"label":"Model","value":"..."},{"label":"Margin","value":"..."}],"bullets":["...","...","..."],"chartData":[{"id":"rev","type":"pie","title":"Revenue Mix","data":[{"label":"Enterprise","value":50},{"label":"SMB","value":30},{"label":"Self-serve","value":20}]}]},
-{"id":"pricing_analysis","title":"Pricing Deep-Dive","content":"...","keyInsight":"...","stats":[{"label":"Free Tier","value":"..."},{"label":"Entry Price","value":"..."},{"label":"Enterprise","value":"Custom"}],"bullets":["...","...","..."],"tables":[{"id":"tiers","title":"Pricing Tiers","headers":["Plan","Price","Key Feature"],"rows":[["Free","$0","..."],["Pro","...","..."],["Enterprise","Custom","..."]]}],"chartData":[{"id":"price_compare","type":"bar","title":"Price vs Competitors ($/mo)","xAxis":"Product","yAxis":"$","unit":"$","data":[{"label":"${productName}","value":10},{"label":"Competitor A","value":12},{"label":"Competitor B","value":8}]}]},
+{"id":"pricing_analysis","title":"Pricing Deep-Dive","content":"...","keyInsight":"...","stats":[{"label":"Free Tier","value":"..."},{"label":"Entry Price","value":"..."},{"label":"Enterprise","value":"Custom"}],"bullets":["...","...","..."],"tables":[{"id":"tiers","title":"Pricing Tiers","headers":["Plan","Price","Key Feature"],"rows":[["Free","$0","..."],["Pro","...","..."],["Enterprise","Custom","..."]]}],"chartData":[{"id":"price_compare","type":"bar","title":"Price vs Competitors ($/mo)","xAxis":"Product","yAxis":"$","unit":"$","data":[{"label":"[PRODUCT]","value":10},{"label":"Competitor A","value":12},{"label":"Competitor B","value":8}]}]},
 {"id":"gtm_growth","title":"GTM & Growth Strategy","content":"...","keyInsight":"...","stats":[{"label":"Motion","value":"..."},{"label":"Traffic","value":"..."},{"label":"Growth","value":"..."}],"bullets":["...","...","..."],"chartData":[{"id":"growth","type":"line","title":"Growth Trajectory","xAxis":"Year","yAxis":"Scale","data":[{"label":"2022","value":1},{"label":"2023","value":3},{"label":"2024","value":7},{"label":"2025","value":12}]}]},
 {"id":"tech_arch","title":"Technical Architecture","content":"...","keyInsight":"...","stats":[{"label":"Cloud","value":"..."},{"label":"Languages","value":"..."},{"label":"API","value":"..."}],"bullets":["...","...","..."],"tables":[{"id":"stack","title":"Tech Stack","headers":["Layer","Tech"],"rows":[["Frontend","..."],["Backend","..."],["Database","..."]]}]},
-{"id":"market_comp","title":"Market & Competitive Landscape","content":"...","keyInsight":"...","stats":[{"label":"TAM","value":"..."},{"label":"CAGR","value":"..."},{"label":"Top Rival","value":"..."}],"bullets":["...","...","..."],"tables":[{"id":"comp","title":"Competitor Snapshot","headers":["Dimension","${productName}","Rival A","Rival B"],"rows":[["Price","...","...","..."],["Free tier","...","...","..."],["Best for","...","...","..."]]}],"chartData":[{"id":"mktshare","type":"pie","title":"Market Share Est.","data":[{"label":"${productName}","value":30},{"label":"Rival A","value":25},{"label":"Others","value":45}]}]},
+{"id":"market_comp","title":"Market & Competitive Landscape","content":"...","keyInsight":"...","stats":[{"label":"TAM","value":"..."},{"label":"CAGR","value":"..."},{"label":"Top Rival","value":"..."}],"bullets":["...","...","..."],"tables":[{"id":"comp","title":"Competitor Snapshot","headers":["Dimension","[PRODUCT]","Rival A","Rival B"],"rows":[["Price","...","...","..."],["Free tier","...","...","..."],["Best for","...","...","..."]]}],"chartData":[{"id":"mktshare","type":"pie","title":"Market Share Est.","data":[{"label":"[PRODUCT]","value":30},{"label":"Rival A","value":25},{"label":"Others","value":45}]}]},
 {"id":"customer_profiles","title":"Customer Profiles & ICP","content":"...","keyInsight":"...","stats":[{"label":"Segment","value":"..."},{"label":"Buyer","value":"..."},{"label":"ACV","value":"..."}],"bullets":["...","...","..."],"chartData":[{"id":"custmix","type":"donut","title":"Customer Mix","data":[{"label":"Enterprise","value":30},{"label":"SMB","value":40},{"label":"Self-serve","value":30}]}]},
 {"id":"community","title":"Community & Ecosystem","content":"...","keyInsight":"...","stats":[{"label":"Community","value":"..."},{"label":"Integrations","value":"..."},{"label":"Partners","value":"..."}],"bullets":["...","...","..."]},
 {"id":"financials","title":"Financials & Funding","content":"...","keyInsight":"...","stats":[{"label":"Raised","value":"..."},{"label":"Last Round","value":"..."},{"label":"Valuation","value":"..."}],"bullets":["...","...","..."],"tables":[{"id":"rounds","title":"Funding","headers":["Round","Year","Amount"],"rows":[["Seed","...","..."],["Series A","...","..."],["Later","...","..."]]}],"chartData":[{"id":"funding","type":"bar","title":"Funding ($M)","xAxis":"Round","yAxis":"$M","unit":"$M","data":[{"label":"Seed","value":2},{"label":"Series A","value":15},{"label":"Later","value":80}]}]},
 {"id":"swot_analysis","title":"SWOT Analysis","content":"Strengths: ...\\n\\nWeaknesses: ...","keyInsight":"...","bullets":["STRENGTH: ...","STRENGTH: ...","WEAKNESS: ...","OPPORTUNITY: ...","THREAT: ..."]},
 {"id":"strategic_outlook","title":"Strategic Outlook & Risks","content":"...","keyInsight":"Bull or bear in one sentence","stats":[{"label":"Verdict","value":"..."},{"label":"Risk","value":"..."},{"label":"Catalyst","value":"..."}],"bullets":["...","...","..."]}
 ],"sources":[{"num":1,"domain":"...","title":"...","url":"https://...","usedIn":"..."},{"num":2,"domain":"...","title":"...","url":"https://...","usedIn":"..."}]}`;
+
+function buildDocDynamicPart(productName: string, focusAreas: string, tier1: { goal?: string; depth?: string }, tier2Context: string, userContext: string, research: string): string {
+  return `PRODUCT: ${productName}
+FOCUS: ${focusAreas} | goal=${tier1.goal ?? "general"}${userContext ? ` | ${userContext}` : ""}${tier2Context ? ` | ${tier2Context}` : ""}
+
+RESEARCH:
+${research}
+
+Generate the complete JSON teardown for ${productName}. Replace all [PRODUCT] placeholders with "${productName}".`;
 }
 
 export async function GET(req: NextRequest) {
@@ -378,12 +384,29 @@ export async function GET(req: NextRequest) {
           message: `Building 12-section report (est. ${etaStr})…`, progress: 0 });
 
         const compressedResearch = compressCrawlerText(researchText);
-        const docPrompt = buildDocPrompt(productName, focusAreas, tier1, tier2Context, userContext, compressedResearch);
+        const dynamicPart = buildDocDynamicPart(productName, focusAreas, tier1, tier2Context, userContext, compressedResearch);
+
+        // For Claude, split into a cached static block (schema + rules) and a small dynamic block
+        // (product name + research). The static block is ~1500 tokens and identical across all
+        // teardowns, so Anthropic serves cache hits at 10% of normal input price.
+        const docMessages: Parameters<typeof streamText>[0]["messages"] = modelParam === "claude"
+          ? [{
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: DOC_STATIC_PROMPT,
+                  providerOptions: { anthropic: { cacheControl: { type: "ephemeral" } } },
+                },
+                { type: "text", text: dynamicPart },
+              ],
+            }]
+          : [{ role: "user", content: `${DOC_STATIC_PROMPT}\n\n${dynamicPart}` }];
 
         const docStream = streamText({
           model: getDocumentModel(modelParam),
           maxOutputTokens: MAX_DOC_TOKENS,
-          messages: [{ role: "user", content: docPrompt }],
+          messages: docMessages,
         });
 
         let docText = "";
@@ -421,6 +444,7 @@ export async function GET(req: NextRequest) {
         try {
           const docUsage = await docStream.usage;
           if (docUsage) {
+            console.log("[DocAgent usage]", JSON.stringify(docUsage));
             await trackTokens(sessionId, productName, "document_agent", docUsage.inputTokens, docUsage.outputTokens);
           }
         } catch { /* usage tracking failure is non-fatal */ }
