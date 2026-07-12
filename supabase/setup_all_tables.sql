@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS token_usage (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   session_id TEXT NOT NULL,
   agent TEXT NOT NULL,
+  model TEXT,
   input_tokens INTEGER DEFAULT 0,
   output_tokens INTEGER DEFAULT 0,
   total_tokens INTEGER DEFAULT 0,
@@ -57,6 +58,7 @@ CREATE TABLE IF NOT EXISTS admin_teardowns (
   tier2_answers JSONB,
   research_doc JSONB,
   deck_data JSONB,
+  canvas_data JSONB,
   error_message TEXT,
   created_at TIMESTAMPTZ DEFAULT now(),
   completed_at TIMESTAMPTZ
@@ -70,5 +72,23 @@ CREATE TABLE IF NOT EXISTS teardown_pptx_files (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Global, product-keyed research reuse cache — see src/lib/researchCache.ts. Sections carry
+-- their own sources so reused content stays citable/fact-checkable without re-crawling.
+CREATE TABLE IF NOT EXISTS research_cache (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  product_key TEXT NOT NULL,
+  category TEXT,
+  section_id TEXT NOT NULL,
+  section_data JSONB NOT NULL,
+  sources JSONB NOT NULL DEFAULT '[]',
+  confidence TEXT,
+  reuse_count INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  expires_at TIMESTAMPTZ DEFAULT (now() + INTERVAL '90 days'),
+  UNIQUE (product_key, section_id)
+);
+
 ALTER TABLE admin_teardowns ENABLE ROW LEVEL SECURITY;
 ALTER TABLE teardown_pptx_files ENABLE ROW LEVEL SECURITY;
+ALTER TABLE research_cache ENABLE ROW LEVEL SECURITY;

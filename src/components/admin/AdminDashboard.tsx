@@ -46,6 +46,8 @@ export default function AdminDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [backfilling, setBackfilling] = useState(false);
+  const [backfillResult, setBackfillResult] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/admin/teardowns")
@@ -73,6 +75,23 @@ export default function AdminDashboard() {
     if (url) window.open(url, "_blank");
   }
 
+  // Seeds research_cache from every already-completed teardown that predates the caching
+  // feature (or otherwise never got written back). Idempotent — safe to run more than once.
+  async function handleBackfillCache() {
+    setBackfilling(true);
+    setBackfillResult(null);
+    try {
+      const res = await fetch("/api/admin/backfill-cache", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Backfill failed");
+      setBackfillResult(`Cached ${data.totalSectionsCached} sections across ${data.teardownsProcessed} teardowns.`);
+    } catch (e) {
+      setBackfillResult(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBackfilling(false);
+    }
+  }
+
   const filtered = rows.filter((r) =>
     search.trim() === "" || r.productName.toLowerCase().includes(search.toLowerCase())
   );
@@ -98,6 +117,14 @@ export default function AdminDashboard() {
               className="px-3 py-2 text-sm border-[1.5px] border-tear-border rounded-lg outline-none focus:border-tear-primary bg-white w-56"
             />
             <button
+              onClick={handleBackfillCache}
+              disabled={backfilling}
+              className="px-3.5 py-2 text-[12.5px] font-medium text-tear-muted border-[1.5px] border-tear-border rounded-lg hover:border-tear-primary hover:text-tear-primary transition-colors duration-150 disabled:opacity-60"
+              title="Seed research_cache from every completed teardown that isn't cached yet"
+            >
+              {backfilling ? "Backfilling…" : "Backfill cache"}
+            </button>
+            <button
               onClick={handleLogout}
               className="px-3.5 py-2 text-[12.5px] font-medium text-tear-muted border-[1.5px] border-tear-border rounded-lg hover:border-tear-primary hover:text-tear-primary transition-colors duration-150"
             >
@@ -106,6 +133,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
+        {backfillResult && <p className="text-[13px] text-tear-primary font-medium">{backfillResult}</p>}
         {loading && <p className="text-sm text-tear-muted">Loading…</p>}
         {error && <p className="text-sm text-red-600">{error}</p>}
 

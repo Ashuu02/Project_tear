@@ -30,6 +30,12 @@ export interface ResearchSection {
   bullets?: string[];
   tables?: TableData[];
   chartData?: ChartData[];
+  // Which of ResearchDoc.sources actually back this section's claims — drives real per-section
+  // citation rendering instead of guessing from the section's position in the array.
+  sourceNums?: number[];
+  // Populated by the post-generation hallucination-check pass (src/lib/hallucinationCheck.ts).
+  confidence?: "high" | "medium" | "low";
+  flags?: string[];
 }
 
 export interface TeardownSource {
@@ -70,4 +76,53 @@ export interface DeckSlide {
 
 export interface DeckData {
   slides: DeckSlide[];
+}
+
+// ── Phase 2: Canva-style canvas editor ─────────────────────────────────────
+
+export type CanvasElement =
+  | {
+      id: string; type: "text"; x: number; y: number; w: number; h: number; rotation: number;
+      text: string; fontFamily: string; fontSize: number; fontWeight: number; color: string;
+      align: "left" | "center" | "right"; lineHeight: number; italic?: boolean; zIndex: number;
+      groupId?: string; locked?: boolean; hidden?: boolean;
+    }
+  | {
+      id: string; type: "shape"; x: number; y: number; w: number; h: number; rotation: number;
+      shape: "rect" | "ellipse" | "line" | "arrow"; fill: string; stroke?: string; strokeWidth?: number;
+      cornerRadius?: number; opacity: number; zIndex: number;
+      groupId?: string; locked?: boolean; hidden?: boolean;
+    }
+  | {
+      id: string; type: "image"; x: number; y: number; w: number; h: number; rotation: number;
+      src: string; cropX?: number; cropY?: number; cropW?: number; cropH?: number; zIndex: number;
+      groupId?: string; locked?: boolean; hidden?: boolean;
+    }
+  | {
+      id: string; type: "chart"; x: number; y: number; w: number; h: number; rotation: number;
+      chartType: "bar" | "line" | "pie" | "doughnut" | "area" | "radar" | "scatter";
+      title?: string;
+      data: { name: string; labels: string[]; values: number[] }[];
+      sourceStatId?: string; zIndex: number;
+      groupId?: string; locked?: boolean; hidden?: boolean;
+    }
+  | {
+      id: string; type: "table"; x: number; y: number; w: number; h: number; rotation: number;
+      rows: string[][]; zIndex: number;
+      groupId?: string; locked?: boolean; hidden?: boolean;
+    };
+
+export interface CanvasSlide {
+  id: string;
+  background: { type: "solid" | "gradient" | "image"; value: string };
+  elements: CanvasElement[];
+  sourceSlideType: DeckSlide["type"];
+}
+
+export interface DeckTheme {
+  key: string;
+  name: string;
+  palette: { primary: string; secondary: string; accent: string; background: string; text: string; border: string; surface: string };
+  fontHeading: string;
+  fontBody: string;
 }

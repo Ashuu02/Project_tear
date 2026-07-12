@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase";
-import type { ResearchDoc, DeckData } from "@/types/teardown";
+import type { ResearchDoc, DeckData, CanvasSlide } from "@/types/teardown";
 
 /**
  * Best-effort admin-visibility logging. Never throws — a failure here must
@@ -68,6 +68,37 @@ export async function recordDeckData(sessionId: string, deckData: DeckData): Pro
     await supabaseAdmin.from("admin_teardowns").update({ deck_data: deckData }).eq("session_id", sessionId);
   } catch (err) {
     console.error("[adminTeardowns] Failed to record deck data:", err);
+  }
+}
+
+// Separate from deck_data (the flat DeckSlide[] the admin dashboard reads) — this is the
+// editable canvas representation autosaved from /deck/[sessionId]/edit. Requires the
+// `canvas_data` column added in migration 0003; until that migration is run, this silently
+// no-ops (update on a missing column errors, caught and logged, never thrown) — same
+// fail-open convention as the rest of this file.
+export async function recordCanvasData(sessionId: string, canvasSlides: CanvasSlide[]): Promise<boolean> {
+  try {
+    const { error } = await supabaseAdmin.from("admin_teardowns").update({ canvas_data: canvasSlides }).eq("session_id", sessionId);
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.error("[adminTeardowns] Failed to record canvas data:", err);
+    return false;
+  }
+}
+
+export async function loadCanvasData(sessionId: string): Promise<CanvasSlide[] | null> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("admin_teardowns")
+      .select("canvas_data")
+      .eq("session_id", sessionId)
+      .maybeSingle();
+    if (error || !data?.canvas_data) return null;
+    return data.canvas_data as CanvasSlide[];
+  } catch (err) {
+    console.error("[adminTeardowns] Failed to load canvas data:", err);
+    return null;
   }
 }
 

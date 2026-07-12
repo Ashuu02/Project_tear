@@ -14,12 +14,20 @@ const ACCEPTED_MIME = [
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
 
+const DEPTH_OPTIONS: Array<{ value: "standard" | "moderate" | "deep"; label: string; description: string; warning?: string }> = [
+  { value: "standard", label: "Standard", description: "Current default — fast, concise sections." },
+  { value: "moderate", label: "Moderate", description: "Richer content — more depth per section, more tokens used." },
+  { value: "deep", label: "Deep", description: "Maximum depth and detail.", warning: "Uses significantly more tokens — recommended for premium usage." },
+];
+
 export default function ContextPage() {
   const router         = useRouter();
   const productName    = useSessionStore((s) => s.productName);
   const sessionId      = useSessionStore((s) => s.sessionId);
   const tier2Answers   = useSessionStore((s) => s.tier2Answers);
   const setUserContext = useSessionStore((s) => s.setUserContext);
+  const researchDepth  = useSessionStore((s) => s.researchDepth);
+  const setResearchDepth = useSessionStore((s) => s.setResearchDepth);
 
   const [ready, setReady]             = useState(false);
   const [textValue, setTextValue]     = useState("");
@@ -27,14 +35,25 @@ export default function ContextPage() {
   const [fileError, setFileError]     = useState<string>("");
   const [isDragging, setIsDragging]   = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [depthMenuOpen, setDepthMenuOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef  = useRef<HTMLTextAreaElement>(null);
+  const depthMenuRef  = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setReady(true), 50);
     return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    if (!depthMenuOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (depthMenuRef.current && !depthMenuRef.current.contains(e.target as Node)) setDepthMenuOpen(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [depthMenuOpen]);
 
   useEffect(() => {
     if (ready && (!productName || !tier2Answers)) router.replace("/");
@@ -324,13 +343,55 @@ export default function ContextPage() {
           Skip to analysis
         </button>
 
-        <button
-          onClick={() => proceed(false)}
-          disabled={isSubmitting}
-          className="px-7 py-3.5 text-[15px] font-medium text-white bg-tear-primary rounded-lg hover:opacity-90 transition-all duration-150 disabled:opacity-60"
-        >
-          {isSubmitting ? "Preparing…" : "Continue →"}
-        </button>
+        <div ref={depthMenuRef} className="relative flex flex-col items-end gap-1.5">
+          <span className="text-[11px] text-tear-muted">
+            Depth: <span className="font-medium text-tear-text">{DEPTH_OPTIONS.find((o) => o.value === researchDepth)?.label}</span>
+          </span>
+
+          {depthMenuOpen && (
+            <div className="absolute bottom-full right-0 mb-2 w-72 bg-white border border-tear-border rounded-xl shadow-lg overflow-hidden z-20">
+              {DEPTH_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => { setResearchDepth(opt.value); setDepthMenuOpen(false); }}
+                  className={`w-full text-left px-4 py-3 hover:bg-[#F5EFE4] transition-colors duration-150 border-b border-tear-border last:border-0 ${researchDepth === opt.value ? "bg-[#FBF0EB]" : ""}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[13.5px] font-semibold text-tear-text">{opt.label}</span>
+                    {researchDepth === opt.value && (
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#C2451E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 7l3 3 5-6" />
+                      </svg>
+                    )}
+                  </div>
+                  <p className="text-[11.5px] text-tear-muted mt-0.5">{opt.description}</p>
+                  {opt.warning && <p className="text-[10.5px] text-amber-600 mt-1">{opt.warning}</p>}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="flex rounded-lg overflow-hidden border border-tear-primary">
+            <button
+              onClick={() => proceed(false)}
+              disabled={isSubmitting}
+              className="px-7 py-3.5 text-[15px] font-medium text-white bg-tear-primary hover:opacity-90 transition-all duration-150 disabled:opacity-60"
+            >
+              {isSubmitting ? "Preparing…" : "Generate Research Document →"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setDepthMenuOpen((v) => !v)}
+              disabled={isSubmitting}
+              className="px-3 bg-tear-primary hover:opacity-90 transition-all duration-150 border-l border-white/20 disabled:opacity-60"
+              aria-label="Choose research depth"
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                <path d={depthMenuOpen ? "M3 7.5l3-3 3 3" : "M3 4.5l3 3 3-3"} />
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

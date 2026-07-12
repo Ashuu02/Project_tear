@@ -24,6 +24,7 @@ export default function PipelinePage() {
   const tier2Answers   = useSessionStore((s) => s.tier2Answers);
   const userContext    = useSessionStore((s) => s.userContext);
   const selectedModel      = useSessionStore((s) => s.selectedModel);
+  const researchDepth      = useSessionStore((s) => s.researchDepth);
   const setResearchDoc     = useSessionStore((s) => s.setResearchDoc);
   const setActiveSession   = useSessionStore((s) => s.setActiveSession);
   const clearActiveSession = useSessionStore((s) => s.clearActiveSession);
@@ -78,6 +79,7 @@ export default function PipelinePage() {
       tier1: JSON.stringify(tier1Answers ?? {}),
       tier2: JSON.stringify(tier2Answers ?? {}),
       model: selectedModel ?? "claude",
+      depth: researchDepth ?? "standard",
     });
 
     if (userContext?.text) {
@@ -178,7 +180,7 @@ export default function PipelinePage() {
     };
 
     return () => es.close();
-  }, [ready, productName, sessionId, tier1Answers, tier2Answers, userContext, selectedModel, setResearchDoc, setActiveSession, clearActiveSession, addEntry, router]);
+  }, [ready, productName, sessionId, tier1Answers, tier2Answers, userContext, selectedModel, researchDepth, setResearchDoc, setActiveSession, clearActiveSession, addEntry, router]);
 
   if (!ready || !productName) {
     return (

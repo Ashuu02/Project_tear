@@ -2,6 +2,7 @@
 "use client";
 
 import type { TeardownSource } from "@/types/teardown";
+import { isValidHttpUrl } from "@/lib/utils";
 
 interface CitationsPanelProps {
   sources?: TeardownSource[];
@@ -45,7 +46,7 @@ export default function CitationsPanel({ sources }: CitationsPanelProps) {
         {citations.map((c) => {
           const faviconUrl = getFaviconUrl(c.domain);
           const displayDomain = getDomainDisplay(c.domain);
-          const isClickable = c.url && c.url !== "#";
+          const isClickable = isValidHttpUrl(c.url);
 
           const content = (
             <div className="flex items-start gap-2 w-full">

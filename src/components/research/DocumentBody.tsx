@@ -2,7 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import { useSessionStore } from "@/store/session";
-import type { ResearchSection, TableData, ChartData } from "@/types/teardown";
+import { isValidHttpUrl } from "@/lib/utils";
+import type { ResearchSection, TableData, ChartData, TeardownSource } from "@/types/teardown";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
@@ -11,21 +12,68 @@ import {
 
 const CHART_COLORS = ["#C2451E", "#E07A5F", "#F2CC8F", "#81B29A", "#3D405B", "#F4F1DE", "#A89890", "#7C6E68"];
 
-function Cite({ num }: { num: number }) {
+function Cite({ num, url }: { num: number; url?: string }) {
+  const label = `[${num}]`;
+  if (!isValidHttpUrl(url)) {
+    return <sup className="text-tear-primary text-[10px] font-mono ml-[1px]">{label}</sup>;
+  }
   return (
-    <sup className="text-tear-primary text-[10px] font-mono cursor-pointer hover:underline ml-[1px]">
-      [{num}]
+    <sup className="ml-[1px]">
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-tear-primary text-[10px] font-mono cursor-pointer hover:underline"
+      >
+        {label}
+      </a>
     </sup>
   );
 }
 
-function SectionHeading({ num, title, id, hasHistory, onUndo }: {
-  num: string; title: string; id: string; hasHistory: boolean; onUndo: () => void;
+// One <Cite> per source the model actually attributed to this section (ResearchSection.sourceNums)
+// — replaces the old index-based guess (section 3 always cited [3]) with real attribution.
+function CiteGroup({ nums, sources }: { nums?: number[]; sources?: TeardownSource[] }) {
+  if (!nums || nums.length === 0) return null;
+  return (
+    <>
+      {nums.map((n) => (
+        <Cite key={n} num={n} url={sources?.find((s) => s.num === n)?.url} />
+      ))}
+    </>
+  );
+}
+
+const CONFIDENCE_META: Record<"high" | "medium" | "low", { label: string; dot: string; text: string }> = {
+  high:   { label: "High confidence",   dot: "bg-emerald-500", text: "text-emerald-700" },
+  medium: { label: "Medium confidence", dot: "bg-amber-500",   text: "text-amber-700" },
+  low:    { label: "Low confidence",    dot: "bg-red-500",     text: "text-red-700" },
+};
+
+// Fact-check signal from the hallucination-check pass — never removes content, just flags it,
+// per the "flag visually, keep it" decision.
+function ConfidenceBadge({ confidence }: { confidence?: "high" | "medium" | "low" }) {
+  if (!confidence) return null;
+  const meta = CONFIDENCE_META[confidence];
+  return (
+    <span
+      title={`${meta.label} — based on how well the underlying research supports this section's claims`}
+      className={`flex-shrink-0 flex items-center gap-1.5 px-2 py-1 rounded-full bg-white border border-tear-border text-[10.5px] font-medium ${meta.text}`}
+    >
+      <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />
+      {meta.label}
+    </span>
+  );
+}
+
+function SectionHeading({ num, title, id, hasHistory, onUndo, confidence }: {
+  num: string; title: string; id: string; hasHistory: boolean; onUndo: () => void; confidence?: "high" | "medium" | "low";
 }) {
   return (
     <div id={id} className="flex items-baseline gap-3 pt-12 pb-3 border-b-[1.5px] border-tear-border mb-5 scroll-mt-6">
       <span className="font-mono text-[11px] text-tear-primary font-medium flex-shrink-0">{num}</span>
       <h2 className="font-lora text-[22px] font-semibold text-tear-text tracking-[-0.02em] flex-1">{title}</h2>
+      <ConfidenceBadge confidence={confidence} />
       {hasHistory && (
         <button
           onClick={onUndo}
@@ -189,12 +237,42 @@ function SectionChart({ chart }: { chart: ChartData }) {
   );
 }
 
-function DynamicSection({ section, index, overrideContent, hasHistory, onUndo }: {
+// Wraps any flagged (possibly-unsupported) substrings in a paragraph with a dotted-underline
+// marker + tooltip. Content is never removed — this is a visual signal only, per the "flag
+// visually, keep it" decision on hallucination handling.
+function renderParagraphWithFlags(text: string, flags?: string[]): React.ReactNode {
+  if (!flags || flags.length === 0) return text;
+  // Longest-first so a flag that's a substring of another doesn't split it apart first.
+  const sorted = [...flags].filter(Boolean).sort((a, b) => b.length - a.length);
+  let pattern: RegExp;
+  try {
+    pattern = new RegExp(`(${sorted.map((f) => f.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`, "g");
+  } catch {
+    return text;
+  }
+  const parts = text.split(pattern);
+  return parts.map((part, i) =>
+    sorted.includes(part) ? (
+      <mark
+        key={i}
+        title="Low confidence — couldn't fully verify this against the research"
+        className="bg-transparent text-tear-text underline decoration-dotted decoration-amber-500 decoration-2 underline-offset-2 cursor-help"
+      >
+        {part}
+      </mark>
+    ) : (
+      <span key={i}>{part}</span>
+    )
+  );
+}
+
+function DynamicSection({ section, index, overrideContent, hasHistory, onUndo, sources }: {
   section: ResearchSection;
   index: number;
   overrideContent?: string;
   hasHistory: boolean;
   onUndo: () => void;
+  sources?: TeardownSource[];
 }) {
   const num = String(index + 1).padStart(2, "0");
   const content = overrideContent ?? section.content;
@@ -202,13 +280,13 @@ function DynamicSection({ section, index, overrideContent, hasHistory, onUndo }:
 
   return (
     <div>
-      <SectionHeading id={section.id} num={num} title={section.title} hasHistory={hasHistory} onUndo={onUndo} />
+      <SectionHeading id={section.id} num={num} title={section.title} hasHistory={hasHistory} onUndo={onUndo} confidence={section.confidence} />
 
       {/* Paragraphs */}
       {paragraphs.map((para, i) => (
         <p key={i} className="text-[14.5px] leading-[1.8] text-tear-text mb-4">
-          {para}
-          {i === 0 && <Cite num={index + 1} />}
+          {renderParagraphWithFlags(para, section.flags)}
+          {i === 0 && <CiteGroup nums={section.sourceNums} sources={sources} />}
         </p>
       ))}
 
@@ -257,18 +335,59 @@ interface DocumentBodyProps {
 export default function DocumentBody({
   productName,
   activeSection,
+  onSectionChange,
   sectionOverrides,
   sectionVersions,
   onUndoSection,
 }: DocumentBodyProps) {
   const researchDoc   = useSessionStore((s) => s.researchDoc);
-  const isFirstRender = useRef(true);
+  const prevActiveSection = useRef(activeSection);
+  const scrollRef      = useRef<HTMLDivElement>(null);
+  const suppressSpy    = useRef(false);
+  const suppressTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onSectionChangeRef = useRef(onSectionChange);
+  onSectionChangeRef.current = onSectionChange;
 
   useEffect(() => {
-    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    if (prevActiveSection.current === activeSection) return;
+    prevActiveSection.current = activeSection;
+    suppressSpy.current = true;
+    if (suppressTimer.current) clearTimeout(suppressTimer.current);
     const el = document.getElementById(activeSection);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    suppressTimer.current = setTimeout(() => { suppressSpy.current = false; }, 700);
   }, [activeSection]);
+
+  // Scroll-spy: highlight the sidebar section nearest the top as the user scrolls.
+  useEffect(() => {
+    const container = scrollRef.current;
+    if (!container || !researchDoc) return;
+
+    let ticking = false;
+    function handleScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        ticking = false;
+        if (suppressSpy.current || !container) return;
+        const threshold = container.getBoundingClientRect().top + 96;
+        let currentId: string | null = null;
+        for (const section of researchDoc!.sections) {
+          const el = document.getElementById(section.id);
+          if (!el) continue;
+          if (el.getBoundingClientRect().top <= threshold) {
+            currentId = section.id;
+          } else {
+            break;
+          }
+        }
+        if (currentId) onSectionChangeRef.current(currentId);
+      });
+    }
+
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [researchDoc]);
 
   if (!researchDoc) {
     return (
@@ -279,7 +398,7 @@ export default function DocumentBody({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto px-14 pb-24">
+    <div ref={scrollRef} className="flex-1 overflow-y-auto px-14 pb-24">
       {researchDoc.sections.map((section, i) => (
         <DynamicSection
           key={section.id}
@@ -288,6 +407,7 @@ export default function DocumentBody({
           overrideContent={sectionOverrides?.[section.id]}
           hasHistory={(sectionVersions?.[section.id]?.length ?? 0) > 0}
           onUndo={() => onUndoSection?.(section.id)}
+          sources={researchDoc.sources}
         />
       ))}
       <p className="text-[12px] text-[#A89890] mt-8 pt-4 border-t border-tear-border">

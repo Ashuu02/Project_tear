@@ -45,6 +45,15 @@ export default function DeckNav({ productName, sessionId, currentSlide, totalSli
           Research Doc
         </button>
         <button
+          onClick={() => router.push(`/deck/${sessionId}/edit`)}
+          className="flex items-center gap-1.5 px-3.5 py-[7px] text-[12px] font-medium text-tear-muted border-[1.5px] border-tear-border rounded-lg hover:border-tear-primary hover:text-tear-primary transition-colors duration-150"
+        >
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9.5 2 12 4.5 5 11.5 2 12l0.5-3Z" />
+          </svg>
+          Edit Deck
+        </button>
+        <button
           onClick={onDownloadPptx}
           className="flex items-center gap-1.5 px-4 py-[7px] text-[12px] font-semibold text-white bg-tear-primary rounded-lg hover:bg-tear-primary-dark transition-colors duration-150"
         >
