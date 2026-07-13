@@ -43,6 +43,7 @@ interface SessionState {
   deckThemeKey: string | null;
   activeSession: ActiveSession | null;
   researchDepth: ResearchDepth;
+  isViewingHistory: boolean;
   setProductName: (name: string) => void;
   setSelectedModel: (model: ModelProvider) => void;
   setResearchDepth: (depth: ResearchDepth) => void;
@@ -79,6 +80,7 @@ export const useSessionStore = create<SessionState>()(
       deckThemeKey: null,
       activeSession: null,
       researchDepth: "standard",
+      isViewingHistory: false,
       setProductName: (name) => set({ productName: name }),
       setSelectedModel: (model) => set({ selectedModel: model }),
       setResearchDepth: (depth) => set({ researchDepth: depth }),
@@ -109,6 +111,7 @@ export const useSessionStore = create<SessionState>()(
           deckThemeKey: null,
           activeSession: null,
           researchDepth: "standard",
+          isViewingHistory: false,
         }),
       loadFromHistory: (entry) =>
         set({
@@ -125,6 +128,7 @@ export const useSessionStore = create<SessionState>()(
           agentStatuses: {},
           activeSession: null,
           researchDepth: "standard",
+          isViewingHistory: true,
         }),
       resetSession: () =>
         set({
@@ -142,6 +146,7 @@ export const useSessionStore = create<SessionState>()(
           deckThemeKey: null,
           activeSession: null,
           researchDepth: "standard",
+          isViewingHistory: false,
         }),
     }),
     { name: "tear-session" }
