@@ -29,6 +29,9 @@ export const metadata: Metadata = {
   title: "Tear | AI Product Teardowns",
   description:
     "AI agents crawl dozens of sources and assemble a citation-backed teardown so you understand any product deeply, in minutes.",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
