@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateText } from "ai";
 import type { LanguageModelUsage } from "ai";
 import { anthropic } from "@/lib/anthropic";
-import { getDocumentModel, googleTools, type ModelProvider } from "@/lib/providers";
+import { getDocumentModel, resolveModelName, googleTools, type ModelProvider } from "@/lib/providers";
 import { tavilySearch } from "@/lib/tavily";
 import { trackTokens } from "@/lib/tokenTracker";
 import type { ResearchDoc } from "@/types/teardown";
@@ -71,6 +71,7 @@ Minimize tokens — be concise.`;
 
     let resultText: string;
     let usage: LanguageModelUsage | undefined;
+    let modelUsed: string;
 
     if (isReCrawl) {
       // ── Re-crawl: fetch fresh web data then answer ─────────────────────────
@@ -86,6 +87,7 @@ Minimize tokens — be concise.`;
         });
         resultText = result.text;
         usage = result.usage;
+        modelUsed = "gemini-2.0-flash";
 
       } else if (model === "groq") {
         // Groq: Tavily search then Groq synthesis
@@ -109,6 +111,7 @@ Minimize tokens — be concise.`;
         });
         resultText = result.text;
         usage = result.usage;
+        modelUsed = "llama-3.3-70b-versatile";
 
       } else {
         // Claude: native web search tool
@@ -121,6 +124,7 @@ Minimize tokens — be concise.`;
         });
         resultText = result.text;
         usage = result.usage;
+        modelUsed = "claude-sonnet-4-6";
       }
 
     } else {
@@ -133,10 +137,11 @@ Minimize tokens — be concise.`;
       });
       resultText = result.text;
       usage = result.usage;
+      modelUsed = resolveModelName(model, "document");
     }
 
     if (usage) {
-      await trackTokens(sessionId, productName, "chatbot", usage.inputTokens, usage.outputTokens);
+      await trackTokens(sessionId, productName, "chatbot", modelUsed, usage.inputTokens, usage.outputTokens);
     }
 
     const sectionUpdate = parseSectionUpdate(resultText);

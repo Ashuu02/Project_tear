@@ -37,3 +37,6 @@ next-env.d.ts
 
 # VS Code workspace files (personal editor config)
 *.code-workspace
+
+# Personal Claude Code settings (not shared with team)
+.claude/settings.local.json

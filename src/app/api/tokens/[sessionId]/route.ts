@@ -27,21 +27,23 @@ export async function GET(
       return NextResponse.json({ error: totalsError.message }, { status: 500 });
     }
 
-    // Get per-agent breakdown
+    // Get per-agent breakdown, plus every individual call (agent + model + tokens + when) so
+    // callers can build a full per-action audit trail, not just a per-agent rollup.
     const { data: breakdown, error: breakdownError } = await supabaseAdmin
       .from("token_usage")
-      .select("agent, total_tokens")
-      .eq("session_id", sessionId);
+      .select("agent, model, input_tokens, output_tokens, total_tokens, created_at")
+      .eq("session_id", sessionId)
+      .order("created_at", { ascending: true });
 
     if (breakdownError) {
       // Table may not exist yet — return zero tokens gracefully
       if (breakdownError.message?.includes("schema cache") || breakdownError.code === "42P01") {
-        return NextResponse.json({ totalTokens: 0, totalInputTokens: 0, totalOutputTokens: 0, breakdown: [] });
+        return NextResponse.json({ totalTokens: 0, totalInputTokens: 0, totalOutputTokens: 0, breakdown: [], calls: [] });
       }
       return NextResponse.json({ error: breakdownError.message }, { status: 500 });
     }
 
-    // Aggregate by agent
+    // Aggregate by agent (kept for existing callers of this shape)
     const agentTotals: Record<string, number> = {};
     for (const row of breakdown ?? []) {
       agentTotals[row.agent] = (agentTotals[row.agent] ?? 0) + (row.total_tokens ?? 0);
@@ -57,6 +59,14 @@ export async function GET(
       totalInputTokens: totals?.total_input_tokens ?? 0,
       totalOutputTokens: totals?.total_output_tokens ?? 0,
       breakdown: breakdownArray,
+      calls: (breakdown ?? []).map((row) => ({
+        agent: row.agent,
+        model: row.model,
+        inputTokens: row.input_tokens,
+        outputTokens: row.output_tokens,
+        totalTokens: row.total_tokens,
+        createdAt: row.created_at,
+      })),
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

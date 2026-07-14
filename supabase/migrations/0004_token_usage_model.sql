@@ -1,0 +1,1 @@
+ALTER TABLE token_usage ADD COLUMN IF NOT EXISTS model TEXT;

@@ -42,11 +42,14 @@ export default function DeckConfigPage() {
   const sessionId    = useSessionStore((s) => s.sessionId);
   const researchDoc  = useSessionStore((s) => s.researchDoc);
   const setDeckData  = useSessionStore((s) => s.setDeckData);
+  const setDeckThemeKey = useSessionStore((s) => s.setDeckThemeKey);
+  const selectedModel = useSessionStore((s) => s.selectedModel);
 
   const deckData     = useSessionStore((s) => s.deckData);
   const updateHistoryEntry = useTeardownHistory((s) => s.updateEntry);
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [elapsedSec, setElapsedSec] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
   const [config, setConfig] = useState<DeckConfig>({
     slideCount: 10,
@@ -64,6 +67,16 @@ export default function DeckConfigPage() {
   useEffect(() => {
     if (ready && !productName) router.replace("/");
   }, [ready, productName, router]);
+
+  // Generation is a chain of real network calls (LLM + Supabase + PPTX build) that can
+  // legitimately take 30-90s — without a running counter a static "Generating…" spinner
+  // reads as hung well before it actually is, and people bail via Stop or a refresh.
+  useEffect(() => {
+    if (!loading) { setElapsedSec(0); return; }
+    const start = Date.now();
+    const id = setInterval(() => setElapsedSec(Math.floor((Date.now() - start) / 1000)), 1000);
+    return () => clearInterval(id);
+  }, [loading]);
 
   function toggleFocus(val: string) {
     setConfig((c) => ({
@@ -88,16 +101,29 @@ export default function DeckConfigPage() {
       const res = await fetch("/api/deck", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productName, sections: summaryForDeck, config, sessionId }),
+        body: JSON.stringify({ productName, sections: summaryForDeck, config, sessionId, model: selectedModel ?? "claude" }),
         signal: controller.signal,
       });
       if (!res.ok) throw new Error("Deck generation failed");
       const data = (await res.json()) as DeckData;
-      setDeckData(data);
-      updateHistoryEntry(sessionId, { deckData: data });
-      router.push(`/deck/${sessionId}`);
+      // Each of these persists to localStorage and can throw (e.g. quota exceeded) even though
+      // the in-memory store update it wraps already succeeded — never let that block navigation
+      // to the deck the user already paid the generation cost for.
+      try {
+        setDeckData(data);
+        setDeckThemeKey(config.theme);
+      } catch (persistErr) {
+        console.error("Failed to persist deck data:", persistErr);
+      }
+      try {
+        updateHistoryEntry(sessionId, { deckData: data });
+      } catch (historyErr) {
+        console.error("Failed to update teardown history:", historyErr);
+      }
+      router.push(`/deck/${sessionId}/edit`);
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") return;
+      console.error("Deck generation failed:", err);
       setLoading(false);
     }
   }
@@ -311,7 +337,7 @@ export default function DeckConfigPage() {
                 <svg className="animate-spin" width="16" height="16" viewBox="0 0 14 14" fill="none">
                   <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.5" strokeDasharray="20 15" />
                 </svg>
-                Generating…
+                Generating… {elapsedSec}s
               </>
             ) : (
               "Generate my deck →"
@@ -329,11 +355,15 @@ export default function DeckConfigPage() {
             </button>
           )}
           <p className="text-[13px] italic text-[#A89890] text-center">
-            Usually ready in 60–90 seconds · Preview slides as they generate
+            {loading
+              ? elapsedSec < 60
+                ? "Usually ready in 60–90 seconds — writing your research into slides…"
+                : "Almost there — finalizing slides and building the file…"
+              : "Usually ready in 60–90 seconds · Preview slides as they generate"}
           </p>
           {deckData && (
             <button
-              onClick={() => router.push(`/deck/${sessionId}`)}
+              onClick={() => router.push(`/deck/${sessionId}/edit`)}
               className="text-[13px] text-tear-muted hover:text-tear-primary transition-colors duration-150 underline underline-offset-2"
             >
               View existing deck instead →

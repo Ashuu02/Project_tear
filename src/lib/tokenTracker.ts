@@ -8,6 +8,7 @@ export async function trackTokens(
   sessionId: string,
   productName: string,
   agent: string,
+  model: string,
   inputTokens: number | undefined,
   outputTokens: number | undefined
 ): Promise<void> {
@@ -20,6 +21,7 @@ export async function trackTokens(
     await supabaseAdmin.from("token_usage").insert({
       session_id: sessionId,
       agent,
+      model,
       input_tokens: safeInput,
       output_tokens: safeOutput,
       total_tokens: totalTokens,

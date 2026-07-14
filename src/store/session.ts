@@ -13,6 +13,7 @@ interface Tier1Answers {
 }
 
 export type Tier2Answers = Record<string, string | string[]>;
+export type ResearchDepth = "standard" | "moderate" | "deep";
 
 export interface UserContext {
   text: string;
@@ -39,10 +40,13 @@ interface SessionState {
   agentStatuses: Record<string, AgentStatus>;
   researchDoc: ResearchDoc | null;
   deckData: DeckData | null;
+  deckThemeKey: string | null;
   activeSession: ActiveSession | null;
+  researchDepth: ResearchDepth;
   isViewingHistory: boolean;
   setProductName: (name: string) => void;
   setSelectedModel: (model: ModelProvider) => void;
+  setResearchDepth: (depth: ResearchDepth) => void;
   setTier1Answers: (answers: Tier1Answers) => void;
   setTier2Answers: (answers: Tier2Answers) => void;
   setTier2Draft: (step: number, answers: Tier2Answers) => void;
@@ -51,6 +55,7 @@ interface SessionState {
   setAgentStatus: (agent: string, status: AgentStatus) => void;
   setResearchDoc: (doc: ResearchDoc) => void;
   setDeckData: (deck: DeckData) => void;
+  setDeckThemeKey: (key: string) => void;
   setActiveSession: (s: ActiveSession) => void;
   clearActiveSession: () => void;
   resetSession: () => void;
@@ -72,10 +77,13 @@ export const useSessionStore = create<SessionState>()(
       agentStatuses: {},
       researchDoc: null,
       deckData: null,
+      deckThemeKey: null,
       activeSession: null,
+      researchDepth: "standard",
       isViewingHistory: false,
       setProductName: (name) => set({ productName: name }),
       setSelectedModel: (model) => set({ selectedModel: model }),
+      setResearchDepth: (depth) => set({ researchDepth: depth }),
       setTier1Answers: (answers) => set({ tier1Answers: answers }),
       setTier2Answers: (answers) => set({ tier2Answers: answers }),
       setTier2Draft: (step, answers) => set({ tier2Step: step, tier2AnswersDraft: answers }),
@@ -85,6 +93,7 @@ export const useSessionStore = create<SessionState>()(
         set((s) => ({ agentStatuses: { ...s.agentStatuses, [agent]: status } })),
       setResearchDoc: (doc) => set({ researchDoc: doc }),
       setDeckData: (deck) => set({ deckData: deck }),
+      setDeckThemeKey: (key) => set({ deckThemeKey: key }),
       setActiveSession: (s) => set({ activeSession: s }),
       clearActiveSession: () => set({ activeSession: null }),
       startNewTeardown: (name) =>
@@ -99,7 +108,9 @@ export const useSessionStore = create<SessionState>()(
           agentStatuses: {},
           researchDoc: null,
           deckData: null,
+          deckThemeKey: null,
           activeSession: null,
+          researchDepth: "standard",
           isViewingHistory: false,
         }),
       loadFromHistory: (entry) =>
@@ -108,6 +119,7 @@ export const useSessionStore = create<SessionState>()(
           productName: entry.productName,
           researchDoc: entry.researchDoc ?? null,
           deckData: entry.deckData ?? null,
+          deckThemeKey: null,
           tier1Answers: null,
           tier2Answers: null,
           tier2Step: 0,
@@ -115,6 +127,7 @@ export const useSessionStore = create<SessionState>()(
           userContext: null,
           agentStatuses: {},
           activeSession: null,
+          researchDepth: "standard",
           isViewingHistory: true,
         }),
       resetSession: () =>
@@ -130,7 +143,9 @@ export const useSessionStore = create<SessionState>()(
           agentStatuses: {},
           researchDoc: null,
           deckData: null,
+          deckThemeKey: null,
           activeSession: null,
+          researchDepth: "standard",
           isViewingHistory: false,
         }),
     }),
