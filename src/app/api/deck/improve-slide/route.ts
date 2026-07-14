@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
   const items = textEls.map((el) => ({ id: el.id, text: el.text }));
   const resolvedModel = model ?? "claude";
 
+  const improveStartTime = Date.now();
   const { text: raw, usage } = await generateText({
     model: getQuestionModel(resolvedModel),
     maxOutputTokens: 800,
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
   });
 
   if (sessionId && usage) {
-    await trackTokens(sessionId, productName, "slide_improve", resolveModelName(resolvedModel, "question"), usage.inputTokens, usage.outputTokens);
+    await trackTokens(sessionId, productName, "slide_improve", resolveModelName(resolvedModel, "question"), usage.inputTokens, usage.outputTokens, { durationMs: Date.now() - improveStartTime });
   }
 
   let improvements: { id: string; text: string }[] = [];

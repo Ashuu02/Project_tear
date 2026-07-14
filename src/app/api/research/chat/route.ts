@@ -72,6 +72,7 @@ Minimize tokens — be concise.`;
     let resultText: string;
     let usage: LanguageModelUsage | undefined;
     let modelUsed: string;
+    const chatStartTime = Date.now();
 
     if (isReCrawl) {
       // ── Re-crawl: fetch fresh web data then answer ─────────────────────────
@@ -141,7 +142,7 @@ Minimize tokens — be concise.`;
     }
 
     if (usage) {
-      await trackTokens(sessionId, productName, "chatbot", modelUsed, usage.inputTokens, usage.outputTokens);
+      await trackTokens(sessionId, productName, "chatbot", modelUsed, usage.inputTokens, usage.outputTokens, { durationMs: Date.now() - chatStartTime });
     }
 
     const sectionUpdate = parseSectionUpdate(resultText);

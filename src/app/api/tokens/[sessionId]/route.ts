@@ -11,6 +11,8 @@ export async function GET(
     return NextResponse.json({ error: "Missing sessionId" }, { status: 400 });
   }
 
+  const EMPTY_RESPONSE = { totalTokens: 0, totalInputTokens: 0, totalOutputTokens: 0, breakdown: [], calls: [] };
+
   try {
     // Get session totals
     const { data: totals, error: totalsError } = await supabaseAdmin
@@ -19,28 +21,27 @@ export async function GET(
       .eq("session_id", sessionId)
       .single();
 
+    // This is a best-effort info widget, not a critical path — any schema/query issue here
+    // (missing table, missing column from a not-yet-run migration, no rows for this session
+    // yet) should degrade to "no data" rather than break the page that's showing it.
     if (totalsError && totalsError.code !== "PGRST116") {
-      // Table may not exist yet — return zero tokens gracefully
-      if (totalsError.message?.includes("schema cache") || totalsError.code === "42P01") {
-        return NextResponse.json({ totalTokens: 0, totalInputTokens: 0, totalOutputTokens: 0, breakdown: [] });
-      }
-      return NextResponse.json({ error: totalsError.message }, { status: 500 });
+      console.error("[api/tokens] session_tokens query failed, returning empty:", totalsError.message);
+      return NextResponse.json(EMPTY_RESPONSE);
     }
 
-    // Get per-agent breakdown, plus every individual call (agent + model + tokens + when) so
-    // callers can build a full per-action audit trail, not just a per-agent rollup.
+    // Every operation this session performed — a real LLM call ("generate") or a section
+    // served from cache instead ("cache_reuse", 0 tokens) — so callers can build a full
+    // per-action audit trail (which sections were reused vs generated, by which agent, at
+    // what cost), not just a per-agent token rollup.
     const { data: breakdown, error: breakdownError } = await supabaseAdmin
       .from("token_usage")
-      .select("agent, model, input_tokens, output_tokens, total_tokens, created_at")
+      .select("agent, model, operation, section_ids, duration_ms, input_tokens, output_tokens, total_tokens, created_at")
       .eq("session_id", sessionId)
       .order("created_at", { ascending: true });
 
     if (breakdownError) {
-      // Table may not exist yet — return zero tokens gracefully
-      if (breakdownError.message?.includes("schema cache") || breakdownError.code === "42P01") {
-        return NextResponse.json({ totalTokens: 0, totalInputTokens: 0, totalOutputTokens: 0, breakdown: [], calls: [] });
-      }
-      return NextResponse.json({ error: breakdownError.message }, { status: 500 });
+      console.error("[api/tokens] token_usage query failed, returning empty:", breakdownError.message);
+      return NextResponse.json(EMPTY_RESPONSE);
     }
 
     // Aggregate by agent (kept for existing callers of this shape)
@@ -54,19 +55,33 @@ export async function GET(
       tokens,
     }));
 
+    const rows = breakdown ?? [];
+    const reusedSections = rows.filter((r) => r.operation === "cache_reuse").flatMap((r) => r.section_ids ?? []);
+    const generatedSections = rows.filter((r) => r.operation === "generate" && r.section_ids?.length).flatMap((r) => r.section_ids ?? []);
+
     return NextResponse.json({
       totalTokens: totals?.total_tokens ?? 0,
       totalInputTokens: totals?.total_input_tokens ?? 0,
       totalOutputTokens: totals?.total_output_tokens ?? 0,
       breakdown: breakdownArray,
-      calls: (breakdown ?? []).map((row) => ({
+      calls: rows.map((row) => ({
         agent: row.agent,
         model: row.model,
+        operation: row.operation,
+        sectionIds: row.section_ids,
+        durationMs: row.duration_ms,
         inputTokens: row.input_tokens,
         outputTokens: row.output_tokens,
         totalTokens: row.total_tokens,
         createdAt: row.created_at,
       })),
+      cache: {
+        reusedSections,
+        generatedSections,
+        reuseRate: reusedSections.length + generatedSections.length > 0
+          ? reusedSections.length / (reusedSections.length + generatedSections.length)
+          : null,
+      },
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

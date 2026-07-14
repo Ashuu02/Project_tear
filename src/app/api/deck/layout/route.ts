@@ -38,11 +38,12 @@ export async function POST(req: NextRequest) {
     id: s.id, title: s.title, summary: s.content?.slice(0, 300), keyInsight: s.keyInsight, stats: s.stats,
   }));
 
+  const magicDesignStartTime = Date.now();
   const { deckData, usage, modelName } = await generateDeckData(productName, sections, config, model ?? "claude");
   const canvasSlides = deckDataToCanvasSlides(deckData.slides, theme);
 
   if (sessionId && usage) {
-    await trackTokens(sessionId, productName, "magic_design", modelName, usage.inputTokens, usage.outputTokens);
+    await trackTokens(sessionId, productName, "magic_design", modelName, usage.inputTokens, usage.outputTokens, { durationMs: Date.now() - magicDesignStartTime });
   }
 
   return NextResponse.json({ canvasSlides });

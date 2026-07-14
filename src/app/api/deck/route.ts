@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(getMockDeckData(productName));
   }
 
+  const deckStartTime = Date.now();
   const { deckData, usage, modelName } = await generateDeckData(productName, sections, config, model ?? "claude");
 
   if (sessionId) {
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
     await uploadPptxFile(sessionId, productName, pptxBuffer);
 
     if (usage) {
-      await trackTokens(sessionId, productName, "deck_agent", modelName, usage.inputTokens, usage.outputTokens);
+      await trackTokens(sessionId, productName, "deck_agent", modelName, usage.inputTokens, usage.outputTokens, { durationMs: Date.now() - deckStartTime });
     }
   }
 
