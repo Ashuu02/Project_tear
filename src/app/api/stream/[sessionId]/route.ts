@@ -5,7 +5,7 @@ import { getQuestionModel, getCrawlerModel, getDocumentModel, resolveModelName, 
 import { tavilySearch, buildGroqSearchQueries } from "@/lib/tavily";
 import type { ResearchDoc, ResearchSection, TeardownSource } from "@/types/teardown";
 import { sleep, getMockResearchDoc } from "@/data/mockPipeline";
-import { trackTokens } from "@/lib/tokenTracker";
+import { trackTokens, trackCacheReuse } from "@/lib/tokenTracker";
 import { recordTeardownStart, recordTeardownComplete, recordTeardownError } from "@/lib/adminTeardowns";
 import { getProductCategory } from "@/lib/productCategory";
 import { runHallucinationCheck } from "@/lib/hallucinationCheck";
@@ -340,6 +340,7 @@ export async function GET(req: NextRequest) {
         // ── Agent 1: Question Agent ────────────────────────────────────────
         send({ type: "agent", agent: "Question Agent", status: "running", message: `Validating ${productName}…` });
 
+        const questionStartTime = Date.now();
         const questionResult = await generateText({
           model: getQuestionModel(modelParam),
           maxOutputTokens: 60,
@@ -347,7 +348,7 @@ export async function GET(req: NextRequest) {
         });
 
         if (questionResult.usage) {
-          await trackTokens(sessionId, productName, "question_agent", resolveModelName(modelParam, "question"), questionResult.usage.inputTokens, questionResult.usage.outputTokens);
+          await trackTokens(sessionId, productName, "question_agent", resolveModelName(modelParam, "question"), questionResult.usage.inputTokens, questionResult.usage.outputTokens, { durationMs: Date.now() - questionStartTime });
         }
         send({ type: "agent", agent: "Question Agent", status: "done", message: questionResult.text.split(".")[0].trim() });
 
@@ -359,6 +360,10 @@ export async function GET(req: NextRequest) {
         const cachedMap = await getCachedSections(productKey);
         const reusedIds = CANONICAL_SECTION_IDS.filter((id) => cachedMap[id]);
         const sectionsNeeded = CANONICAL_SECTION_IDS.filter((id) => !cachedMap[id]);
+
+        // Zero-cost ledger rows — one per reused section, so "was section X reused in session Y"
+        // is a precise per-session fact, not just a global counter on research_cache.
+        await trackCacheReuse(sessionId, productName, "document_agent", reusedIds);
 
         let researchText = "";
         let crawlCount   = 0;
@@ -377,6 +382,7 @@ export async function GET(req: NextRequest) {
         const scaledMaxCrawlerTokens = Math.max(500, Math.round(depthConfig.maxCrawlerTokens * crawlerScale));
 
         // ── Agent 2: Crawler Agent ─────────────────────────────────────────
+        const crawlerStartTime = Date.now();
         const seenDomains = new Set<string>();
 
         const totalSources = scaledMaxSearches;
@@ -464,7 +470,7 @@ export async function GET(req: NextRequest) {
 
           const geminiUsage = await geminiCrawler.usage;
           if (geminiUsage) {
-            await trackTokens(sessionId, productName, "crawler_agent", "gemini-2.0-flash", geminiUsage.inputTokens, geminiUsage.outputTokens);
+            await trackTokens(sessionId, productName, "crawler_agent", "gemini-2.0-flash", geminiUsage.inputTokens, geminiUsage.outputTokens, { durationMs: Date.now() - crawlerStartTime });
           }
 
         // ── CLAUDE PATH: Anthropic native web search ──────────────────────
@@ -509,7 +515,7 @@ export async function GET(req: NextRequest) {
 
           const claudeUsage = await claudeCrawler.usage;
           if (claudeUsage) {
-            await trackTokens(sessionId, productName, "crawler_agent", "claude-haiku-4-5-20251001", claudeUsage.inputTokens, claudeUsage.outputTokens);
+            await trackTokens(sessionId, productName, "crawler_agent", "claude-haiku-4-5-20251001", claudeUsage.inputTokens, claudeUsage.outputTokens, { durationMs: Date.now() - crawlerStartTime });
           }
         }
 
@@ -568,7 +574,7 @@ export async function GET(req: NextRequest) {
         try {
           const docUsage = await docStream.usage;
           if (docUsage) {
-            await trackTokens(sessionId, productName, "document_agent", resolveModelName(modelParam, "document"), docUsage.inputTokens, docUsage.outputTokens);
+            await trackTokens(sessionId, productName, "document_agent", resolveModelName(modelParam, "document"), docUsage.inputTokens, docUsage.outputTokens, { sectionIds: sectionsNeeded, durationMs: Date.now() - docStartTime });
           }
         } catch { /* usage tracking failure is non-fatal */ }
 
@@ -577,6 +583,7 @@ export async function GET(req: NextRequest) {
         // Cheap fact-check pass — only on freshly generated sections (cached ones already
         // carry their own confidence from a prior run's check); never blocks or fails the
         // document — missing confidence badges is an acceptable degrade, a missing doc is not.
+        const hallucinationStartTime = Date.now();
         const hallucinationResult = await runHallucinationCheck(freshDocData, researchText, modelParam);
         if (hallucinationResult) {
           for (const section of freshDocData.sections) {
@@ -587,7 +594,7 @@ export async function GET(req: NextRequest) {
             }
           }
           if (hallucinationResult.usage) {
-            await trackTokens(sessionId, productName, "hallucination_check", resolveModelName(modelParam, "question"), hallucinationResult.usage.inputTokens, hallucinationResult.usage.outputTokens);
+            await trackTokens(sessionId, productName, "hallucination_check", resolveModelName(modelParam, "question"), hallucinationResult.usage.inputTokens, hallucinationResult.usage.outputTokens, { sectionIds: freshDocData.sections.map((s) => s.id), durationMs: Date.now() - hallucinationStartTime });
           }
         }
 

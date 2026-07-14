@@ -13,16 +13,27 @@ CREATE TABLE IF NOT EXISTS question_bank (
   last_used TIMESTAMPTZ
 );
 
+-- Every agent action gets exactly one row — a real LLM call ("generate") or a section served
+-- from research_cache instead of re-crawled/re-generated ("cache_reuse", 0 tokens). This is the
+-- single source of truth for cost/usage; session_tokens below is a fast-lookup rollup of it.
 CREATE TABLE IF NOT EXISTS token_usage (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   session_id TEXT NOT NULL,
   agent TEXT NOT NULL,
   model TEXT,
+  product_key TEXT,
+  operation TEXT DEFAULT 'generate',
+  section_ids TEXT[],
+  duration_ms INTEGER,
   input_tokens INTEGER DEFAULT 0,
   output_tokens INTEGER DEFAULT 0,
   total_tokens INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT now()
 );
+CREATE INDEX IF NOT EXISTS idx_token_usage_session_id ON token_usage(session_id);
+CREATE INDEX IF NOT EXISTS idx_token_usage_product_key ON token_usage(product_key);
+CREATE INDEX IF NOT EXISTS idx_token_usage_agent ON token_usage(agent);
+CREATE INDEX IF NOT EXISTS idx_token_usage_operation ON token_usage(operation);
 
 CREATE TABLE IF NOT EXISTS session_tokens (
   session_id TEXT PRIMARY KEY,
