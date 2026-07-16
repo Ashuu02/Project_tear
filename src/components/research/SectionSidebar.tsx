@@ -29,7 +29,7 @@ export default function SectionSidebar({ activeSection, onSectionClick, sections
     : FALLBACK;
 
   return (
-    <div className="w-[216px] flex-shrink-0 border-r border-[#EDE5DC] flex flex-col overflow-hidden">
+    <div className="w-full md:w-[216px] flex-1 md:flex-none md:flex-shrink-0 border-r-0 md:border-r border-[#EDE5DC] flex flex-col overflow-hidden">
       <div className="px-5 pt-5 pb-3 flex-shrink-0">
         <span className="text-[10.5px] font-semibold tracking-[0.14em] uppercase text-[#A89890]">
           {items.length} Sections

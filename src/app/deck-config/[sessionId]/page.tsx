@@ -145,33 +145,33 @@ export default function DeckConfigPage() {
   return (
     <div className="min-h-screen bg-tear-bg flex flex-col font-dm-sans text-tear-text">
       {/* Navbar */}
-      <nav className="flex items-center justify-between px-10 py-[18px] border-b border-[#EDE5DC] flex-shrink-0">
-        <Link href="/" className="flex items-center gap-2.5">
+      <nav className="flex items-center justify-between px-5 md:px-10 py-4 md:py-[18px] border-b border-[#EDE5DC] flex-shrink-0 gap-3">
+        <Link href="/" className="flex items-center gap-2.5 flex-shrink-0">
           <svg width="20" height="20" viewBox="0 0 22 22" fill="none">
             <circle cx="9.5" cy="9.5" r="7" stroke="#C2451E" strokeWidth="1.7" fill="none" />
             <line x1="14.8" y1="14.8" x2="20" y2="20" stroke="#C2451E" strokeWidth="1.7" strokeLinecap="round" />
           </svg>
           <span className="font-lora text-[19px] font-semibold tracking-tight text-tear-text">Tear</span>
         </Link>
-        <span className="text-[13px] text-tear-muted font-normal">
+        <span className="hidden sm:block text-[13px] text-tear-muted font-normal truncate">
           {productName} Teardown · Build your deck
         </span>
-        <div />
+        <div className="hidden md:block" />
       </nav>
 
       {/* Page header */}
-      <div className="pt-[52px] pb-9 px-6 text-center flex flex-col items-center gap-3">
-        <h1 className="font-lora text-[32px] font-semibold text-tear-text tracking-tight">
+      <div className="pt-8 md:pt-[52px] pb-6 md:pb-9 px-5 md:px-6 text-center flex flex-col items-center gap-3">
+        <h1 className="font-lora text-[24px] md:text-[32px] font-semibold text-tear-text tracking-tight">
           Build your deck
         </h1>
-        <p className="text-[15px] text-tear-muted max-w-[460px] leading-relaxed">
+        <p className="text-[14px] md:text-[15px] text-tear-muted max-w-[460px] leading-relaxed">
           Configure how you want the deck to look and feel. We&apos;ll generate it slide by slide.
         </p>
       </div>
 
       {/* Config card + CTA */}
-      <div className="px-6 pb-16 flex flex-col items-center gap-5">
-        <div className="w-full max-w-[680px] bg-[#F5EFE4] border border-[#E8DDD2] rounded-2xl px-8 py-8 flex flex-col">
+      <div className="px-5 md:px-6 pb-10 md:pb-16 flex flex-col items-center gap-5">
+        <div className="w-full max-w-[680px] bg-[#F5EFE4] border border-[#E8DDD2] rounded-2xl px-5 md:px-8 py-6 md:py-8 flex flex-col">
 
           {/* Slide count */}
           <div className="pb-7">
@@ -180,7 +180,7 @@ export default function DeckConfigPage() {
                 <p className="text-sm font-semibold text-tear-text">Number of slides</p>
                 <p className="text-[13px] text-[#A89890] mt-1">More slides means more depth (recommended: 10)</p>
               </div>
-              <div className="flex gap-2.5">
+              <div className="flex gap-2.5 flex-wrap">
                 {([5, 10, 15, 20] as const).map((n) => (
                   <button
                     key={n}
@@ -199,7 +199,7 @@ export default function DeckConfigPage() {
             </div>
           </div>
 
-          <div className="h-px bg-[#EDE5DC] -mx-8" />
+          <div className="h-px bg-[#EDE5DC] -mx-5 md:-mx-8" />
 
           {/* Theme */}
           <div className="py-7">
@@ -208,7 +208,7 @@ export default function DeckConfigPage() {
                 <p className="text-sm font-semibold text-tear-text">Theme</p>
                 <p className="text-[13px] text-[#A89890] mt-1">Choose the visual style for your slides</p>
               </div>
-              <div className="flex gap-3">
+              <div className="grid grid-cols-2 md:flex gap-3">
                 {THEMES.map((theme) => {
                   const active = config.theme === theme.value;
                   return (
@@ -216,7 +216,7 @@ export default function DeckConfigPage() {
                       key={theme.value}
                       onClick={() => setConfig((c) => ({ ...c, theme: theme.value }))}
                       disabled={loading}
-                      className={`flex-1 border-2 rounded-[10px] p-2.5 flex flex-col gap-2 items-center transition-all duration-150 bg-white disabled:cursor-not-allowed disabled:opacity-50 ${
+                      className={`md:flex-1 border-2 rounded-[10px] p-2.5 flex flex-col gap-2 items-center transition-all duration-150 bg-white disabled:cursor-not-allowed disabled:opacity-50 ${
                         active
                           ? "border-tear-primary shadow-[0_0_0_3px_rgba(194,69,30,0.1)]"
                           : "border-[#E8DDD2] hover:border-tear-primary"
@@ -239,7 +239,7 @@ export default function DeckConfigPage() {
             </div>
           </div>
 
-          <div className="h-px bg-[#EDE5DC] -mx-8" />
+          <div className="h-px bg-[#EDE5DC] -mx-5 md:-mx-8" />
 
           {/* Content focus */}
           <div className="py-7">
@@ -270,7 +270,7 @@ export default function DeckConfigPage() {
             </div>
           </div>
 
-          <div className="h-px bg-[#EDE5DC] -mx-8" />
+          <div className="h-px bg-[#EDE5DC] -mx-5 md:-mx-8" />
 
           {/* Audience tone */}
           <div className="py-7">
@@ -279,7 +279,7 @@ export default function DeckConfigPage() {
                 <p className="text-sm font-semibold text-tear-text">Audience tone</p>
                 <p className="text-[13px] text-[#A89890] mt-1">Shapes the framing and language of each slide</p>
               </div>
-              <div className="flex gap-2.5">
+              <div className="grid grid-cols-2 md:flex gap-2.5">
                 {TONE_OPTIONS.map((opt) => {
                   const active = config.tone === opt.value;
                   return (
@@ -287,7 +287,7 @@ export default function DeckConfigPage() {
                       key={opt.value}
                       onClick={() => setConfig((c) => ({ ...c, tone: opt.value }))}
                       disabled={loading}
-                      className={`flex-1 py-2.5 px-3 text-[13px] border-[1.5px] rounded-lg text-center transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-50 ${
+                      className={`md:flex-1 py-2.5 px-3 text-[13px] border-[1.5px] rounded-lg text-center transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-50 ${
                         active
                           ? "bg-[#FBF0EB] border-tear-primary text-tear-primary font-medium"
                           : "bg-transparent border-[#E8DDD2] text-tear-muted hover:border-tear-primary hover:text-tear-primary"
@@ -301,7 +301,7 @@ export default function DeckConfigPage() {
             </div>
           </div>
 
-          <div className="h-px bg-[#EDE5DC] -mx-8" />
+          <div className="h-px bg-[#EDE5DC] -mx-5 md:-mx-8" />
 
           {/* Charts toggle */}
           <div className="pt-7">

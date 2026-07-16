@@ -4,18 +4,19 @@ interface TeardownPreviewProps {
   productName: string;
   previewText?: string;
   sourceProgress?: { crawled: number; total: number };
+  activeOnMobile?: boolean;
 }
 
-export default function TeardownPreview({ productName, previewText, sourceProgress }: TeardownPreviewProps) {
+export default function TeardownPreview({ productName, previewText, sourceProgress, activeOnMobile = false }: TeardownPreviewProps) {
   const crawled = sourceProgress?.crawled ?? 0;
   const total   = sourceProgress?.total ?? 7;
   const pct     = total > 0 ? Math.min(100, Math.round((crawled / total) * 100)) : 0;
   const isGenerating = !previewText;
 
   return (
-    <div className="w-[45%] flex flex-col bg-tear-bg overflow-hidden">
+    <div className={`${activeOnMobile ? "flex" : "hidden"} md:flex w-full md:w-[45%] flex-col bg-tear-bg overflow-hidden`}>
       {/* Panel header */}
-      <div className="px-9 pt-5 pb-3.5 flex-shrink-0 flex items-center justify-between">
+      <div className="px-5 md:px-9 pt-5 pb-3.5 flex-shrink-0 flex items-center justify-between">
         <span className="text-[11px] font-semibold tracking-[0.13em] uppercase text-[#A89890]">
           Teardown Preview
         </span>
@@ -28,7 +29,7 @@ export default function TeardownPreview({ productName, previewText, sourceProgre
       </div>
 
       {/* Document preview */}
-      <div className="flex-1 overflow-hidden px-9 pt-2 relative">
+      <div className="flex-1 overflow-hidden px-5 md:px-9 pt-2 relative">
         {previewText ? (
           <div className="flex flex-col gap-5 animate-fade-up-2">
             <div className="flex flex-col gap-3">
@@ -85,7 +86,7 @@ export default function TeardownPreview({ productName, previewText, sourceProgre
         />
 
         {isGenerating && (
-          <div className="absolute bottom-6 left-9 right-9 flex items-center gap-2 z-10">
+          <div className="absolute bottom-6 left-5 right-5 md:left-9 md:right-9 flex items-center gap-2 z-10">
             <div className="gen-dot" />
             <span className="text-[12px] italic text-[#A89890]">Agents working…</span>
           </div>
@@ -93,8 +94,8 @@ export default function TeardownPreview({ productName, previewText, sourceProgre
       </div>
 
       {/* Sources footer */}
-      <div className="px-9 py-3.5 pb-5 border-t border-[#EDE5DC] flex-shrink-0 flex items-center gap-4">
-        <span className="text-[12px] text-[#A89890] whitespace-nowrap">Sources crawled:</span>
+      <div className="px-5 md:px-9 py-3.5 pb-5 border-t border-[#EDE5DC] flex-shrink-0 flex items-center gap-4">
+        <span className="hidden sm:inline text-[12px] text-[#A89890] whitespace-nowrap">Sources crawled:</span>
         <div className="flex items-center gap-2">
           <span className="font-mono text-[12px] font-medium text-tear-primary">{crawled}</span>
           <span className="text-[12px] text-tear-chip-border">/</span>

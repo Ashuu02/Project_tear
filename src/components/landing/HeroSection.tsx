@@ -83,7 +83,7 @@ export default function HeroSection() {
   }
 
   return (
-    <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 pb-20 pt-12 w-full max-w-[760px] mx-auto">
+    <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-5 md:px-6 pb-12 md:pb-20 pt-8 md:pt-12 w-full max-w-[760px] mx-auto">
       {/* Demo mode badge */}
       {DEMO_MODE && (
         <div className="flex items-center gap-1.5 mb-4 px-3 py-1.5 bg-[#FBF0EB] border border-tear-primary/30 rounded-full animate-fade-up-1">
@@ -150,15 +150,15 @@ export default function HeroSection() {
 
         <button
           onClick={() => handleStart()}
-          className="px-9 py-4 bg-tear-primary hover:bg-tear-primary-dark text-white text-base font-medium tracking-wide rounded-lg transition-colors duration-200 cursor-pointer"
+          className="w-full md:w-auto px-9 py-4 bg-tear-primary hover:bg-tear-primary-dark text-white text-base font-medium tracking-wide rounded-lg transition-colors duration-200 cursor-pointer"
         >
           Build my teardown →
         </button>
 
         {/* Model selector */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col md:flex-row items-center gap-2">
           <span className="text-[11px] font-medium text-tear-muted uppercase tracking-[0.1em]">AI Model</span>
-          <div className="flex items-center bg-[#F0E8E0] rounded-full p-[3px] gap-[2px]">
+          <div className="flex items-center flex-wrap justify-center bg-[#F0E8E0] rounded-full p-[3px] gap-[2px]">
             {MODELS.map((m) => {
               const active = selectedModel === m;
               const meta = MODEL_META[m];

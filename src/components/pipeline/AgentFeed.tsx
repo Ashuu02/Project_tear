@@ -49,22 +49,23 @@ function QueuedIcon() {
 interface AgentFeedProps {
   productName: string;
   feedItems: FeedItem[];
+  activeOnMobile?: boolean;
 }
 
-export default function AgentFeed({ productName, feedItems }: AgentFeedProps) {
+export default function AgentFeed({ productName, feedItems, activeOnMobile = true }: AgentFeedProps) {
   const [askValue, setAskValue] = useState("");
 
   return (
-    <div className="w-[55%] flex flex-col border-r border-[#EDE5DC] overflow-hidden">
+    <div className={`${activeOnMobile ? "flex" : "hidden"} md:flex w-full md:w-[55%] flex-col md:border-r border-[#EDE5DC] overflow-hidden`}>
       {/* Panel header */}
-      <div className="px-8 pt-5 pb-3.5 flex-shrink-0">
+      <div className="px-5 md:px-8 pt-5 pb-3.5 flex-shrink-0">
         <span className="text-[11px] font-semibold tracking-[0.13em] uppercase text-[#A89890]">
           Research Agents
         </span>
       </div>
 
       {/* Scrollable feed */}
-      <div className="flex-1 overflow-y-auto px-8 pb-2 flex flex-col">
+      <div className="flex-1 overflow-y-auto px-5 md:px-8 pb-2 flex flex-col">
         {feedItems.map((item, i) => {
           const isCrawlItem = item.agent === "Crawler Agent" && !!item.url;
 
@@ -131,8 +132,8 @@ export default function AgentFeed({ productName, feedItems }: AgentFeedProps) {
       </div>
 
       {/* Ask anything */}
-      <div className="px-8 py-4 pb-6 border-t border-[#EDE5DC] flex-shrink-0 flex items-center gap-2.5">
-        <span className="text-[13px] italic text-[#A89890] whitespace-nowrap">Ask anything →</span>
+      <div className="px-5 md:px-8 py-4 pb-6 border-t border-[#EDE5DC] flex-shrink-0 flex items-center gap-2.5">
+        <span className="hidden sm:inline text-[13px] italic text-[#A89890] whitespace-nowrap">Ask anything →</span>
         <input
           type="text"
           value={askValue}

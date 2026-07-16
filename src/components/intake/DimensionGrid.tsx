@@ -77,7 +77,7 @@ interface DimensionGridProps {
 
 export default function DimensionGrid({ selected, onToggle }: DimensionGridProps) {
   return (
-    <div className="grid grid-cols-3 gap-3.5 animate-fade-up-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 animate-fade-up-3">
       {DIMENSIONS.map((dim) => {
         const isSelected = selected.has(dim.id);
         return (

@@ -14,7 +14,7 @@ interface OptionGridProps {
 
 export default function OptionGrid({ options, selected, onSelect }: OptionGridProps) {
   return (
-    <div className="grid grid-cols-2 gap-3.5 animate-fade-up-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 animate-fade-up-3">
       {options.map((opt) => {
         const isSelected = selected === opt.id;
         return (

@@ -369,7 +369,7 @@ export default function SlideCanvas({ productName, slideIndex }: SlideCanvasProp
   const render = RENDERERS[activeSlide.type] ?? RENDERERS.cover;
 
   return (
-    <div className="flex-1 min-h-0 flex items-center justify-center p-10 bg-[#EAE3DA]">
+    <div className="flex-1 min-h-0 flex items-center justify-center p-4 md:p-10 bg-[#EAE3DA]">
       <div
         className="bg-white shadow-[0_4px_48px_rgba(0,0,0,0.14)] rounded-[12px] overflow-hidden w-full max-w-5xl"
         style={{ aspectRatio: "16/9" }}

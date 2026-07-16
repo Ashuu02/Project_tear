@@ -398,7 +398,7 @@ export default function DocumentBody({
   }
 
   return (
-    <div ref={scrollRef} className="flex-1 overflow-y-auto px-14 pb-24">
+    <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 md:px-14 pb-24">
       {researchDoc.sections.map((section, i) => (
         <DynamicSection
           key={section.id}

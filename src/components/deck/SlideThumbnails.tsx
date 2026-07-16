@@ -13,7 +13,7 @@ interface SlideThumbnailsProps {
 
 export default function SlideThumbnails({ slides, current, onSelect }: SlideThumbnailsProps) {
   return (
-    <div className="w-[156px] flex-shrink-0 border-r border-[#EDE5DC] overflow-y-auto py-3 px-3 flex flex-col gap-2 bg-[#FAF6F0]">
+    <div className="w-full md:w-[156px] flex-shrink-0 border-r-0 md:border-r border-b md:border-b-0 border-[#EDE5DC] overflow-x-auto md:overflow-y-auto overflow-y-hidden py-3 px-3 flex flex-row md:flex-col gap-2 bg-[#FAF6F0]">
       {slides.map((slide, i) => {
         const isActive = current === i;
         return (
@@ -21,7 +21,7 @@ export default function SlideThumbnails({ slides, current, onSelect }: SlideThum
             key={i}
             onClick={() => onSelect(i)}
             className={`
-              relative w-full rounded-[6px] border-[1.5px] overflow-hidden transition-all duration-100 cursor-pointer
+              relative w-16 md:w-full flex-shrink-0 rounded-[6px] border-[1.5px] overflow-hidden transition-all duration-100 cursor-pointer
               ${isActive
                 ? "border-tear-primary shadow-[0_2px_10px_rgba(194,69,30,0.2)]"
                 : "border-tear-border hover:border-tear-primary/60"
