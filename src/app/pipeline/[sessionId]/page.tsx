@@ -31,6 +31,7 @@ export default function PipelinePage() {
   const addEntry = useTeardownHistory((s) => s.addEntry);
 
   const [ready, setReady]                   = useState(false);
+  const [mobileTab, setMobileTab]           = useState<"agents" | "preview">("agents");
   const [feedItems, setFeedItems]           = useState<FeedItem[]>(INITIAL_FEED);
   const [previewText, setPreviewText]       = useState<string | undefined>();
   const [sourceProgress, setSourceProgress] = useState<{ crawled: number; total: number } | undefined>();
@@ -193,9 +194,32 @@ export default function PipelinePage() {
   return (
     <div className="h-screen bg-tear-bg flex flex-col font-dm-sans text-tear-text overflow-hidden">
       <PipelineNav productName={productName} onStop={stopped ? undefined : handleStop} />
+
+      {/* Segmented toggle: mobile only */}
+      <div className="md:hidden px-5 pt-3 pb-1 flex-shrink-0">
+        <div className="flex bg-[#F5EFE4] border-[1.5px] border-tear-border rounded-[10px] p-[3px]">
+          <button
+            onClick={() => setMobileTab("agents")}
+            className={`flex-1 text-center py-2 rounded-[8px] text-[13px] font-medium transition-colors duration-150 ${
+              mobileTab === "agents" ? "bg-tear-primary text-white" : "text-tear-muted"
+            }`}
+          >
+            Research agents
+          </button>
+          <button
+            onClick={() => setMobileTab("preview")}
+            className={`flex-1 text-center py-2 rounded-[8px] text-[13px] font-medium transition-colors duration-150 ${
+              mobileTab === "preview" ? "bg-tear-primary text-white" : "text-tear-muted"
+            }`}
+          >
+            Preview
+          </button>
+        </div>
+      </div>
+
       <div className="flex-1 flex overflow-hidden">
-        <AgentFeed productName={productName} feedItems={feedItems} />
-        <TeardownPreview productName={productName} previewText={previewText} sourceProgress={sourceProgress} />
+        <AgentFeed productName={productName} feedItems={feedItems} activeOnMobile={mobileTab === "agents"} />
+        <TeardownPreview productName={productName} previewText={previewText} sourceProgress={sourceProgress} activeOnMobile={mobileTab === "preview"} />
       </div>
     </div>
   );

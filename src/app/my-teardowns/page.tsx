@@ -275,11 +275,11 @@ export default function MyTeardownsPage() {
         <Navbar />
       </div>
 
-      <div className="max-w-[1200px] mx-auto px-10 py-10">
+      <div className="max-w-[1200px] mx-auto px-5 md:px-10 py-6 md:py-10">
         {/* Header row */}
-        <div className="flex items-start justify-between mb-8">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6 md:mb-8">
           <div>
-            <h1 className="font-lora text-[42px] font-medium tracking-tight text-tear-text leading-tight">
+            <h1 className="font-lora text-[28px] md:text-[42px] font-medium tracking-tight text-tear-text leading-tight">
               My teardowns
             </h1>
             {entries.length > 0 && (
@@ -291,7 +291,7 @@ export default function MyTeardownsPage() {
           </div>
           <Link
             href="/"
-            className="flex items-center gap-2 px-4 py-2.5 bg-tear-primary hover:bg-tear-primary-dark text-white text-sm font-medium rounded-xl transition-colors duration-150 mt-1 whitespace-nowrap"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 md:py-2.5 bg-tear-primary hover:bg-tear-primary-dark text-white text-sm font-medium rounded-xl transition-colors duration-150 md:mt-1 whitespace-nowrap w-full md:w-auto"
           >
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
               <path d="M6.5 1.5V11.5M1.5 6.5H11.5" stroke="white" strokeWidth="1.6" strokeLinecap="round" />
@@ -301,13 +301,13 @@ export default function MyTeardownsPage() {
         </div>
 
         {/* Filter tabs + search */}
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-0.5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-5">
+          <div className="flex items-center gap-0.5 overflow-x-auto -mx-1 px-1">
             {FILTER_TABS.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveFilter(tab.id)}
-                className={`px-3.5 py-1.5 rounded-lg text-sm transition-colors duration-150 ${
+                className={`px-3.5 py-1.5 rounded-lg text-sm transition-colors duration-150 whitespace-nowrap flex-shrink-0 ${
                   activeFilter === tab.id
                     ? "bg-tear-text text-white font-medium"
                     : "text-tear-muted hover:text-tear-text"
@@ -317,7 +317,7 @@ export default function MyTeardownsPage() {
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-2 border border-tear-border rounded-xl px-3 py-2 bg-white/50 w-52">
+          <div className="flex items-center gap-2 border border-tear-border rounded-xl px-3 py-2 bg-white/50 w-full md:w-52">
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none" className="flex-shrink-0">
               <circle cx="5.5" cy="5.5" r="4" stroke="#7C6E68" strokeWidth="1.3" />
               <path d="M9 9L11.5 11.5" stroke="#7C6E68" strokeWidth="1.3" strokeLinecap="round" />
@@ -343,7 +343,7 @@ export default function MyTeardownsPage() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {filtered.map((entry) => (
               <TeardownCard key={entry.sessionId} entry={entry} onOpen={handleOpenEntry} />
             ))}

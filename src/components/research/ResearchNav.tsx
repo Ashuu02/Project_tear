@@ -15,8 +15,8 @@ export default function ResearchNav({ productName, sessionId, onDownloadPdf, tok
   const router = useRouter();
 
   return (
-    <nav className="sticky top-0 z-20 flex items-center justify-between px-10 py-[18px] border-b border-[#EDE5DC] flex-shrink-0 bg-tear-bg">
-      <Link href="/" className="flex items-center gap-2.5">
+    <nav className="sticky top-0 z-20 flex items-center justify-between px-5 md:px-10 py-4 md:py-[18px] border-b border-[#EDE5DC] flex-shrink-0 bg-tear-bg gap-2">
+      <Link href="/" className="flex items-center gap-2.5 flex-shrink-0">
         <svg width="20" height="20" viewBox="0 0 22 22" fill="none">
           <circle cx="9.5" cy="9.5" r="7" stroke="#C2451E" strokeWidth="1.7" fill="none" />
           <line x1="14.8" y1="14.8" x2="20" y2="20" stroke="#C2451E" strokeWidth="1.7" strokeLinecap="round" />
@@ -24,15 +24,15 @@ export default function ResearchNav({ productName, sessionId, onDownloadPdf, tok
         <span className="font-lora text-[19px] font-semibold tracking-tight text-tear-text">Tear</span>
       </Link>
 
-      <div className="flex items-center gap-2">
-        <span className="text-[13px] font-normal text-tear-muted">{productName}</span>
+      <div className="hidden md:flex items-center gap-2 min-w-0">
+        <span className="text-[13px] font-normal text-tear-muted truncate">{productName}</span>
         <span className="text-[13px] text-tear-chip-border mx-1">·</span>
-        <span className="text-[13px] font-medium text-tear-text">Research Document</span>
+        <span className="text-[13px] font-medium text-tear-text whitespace-nowrap">Research Document</span>
 
         {typeof tokenCount === "number" && tokenCount > 0 && (
           <>
             <span className="text-[13px] text-tear-chip-border mx-1">·</span>
-            <span className="flex items-center gap-1 text-[11.5px] font-medium text-[#A89890] bg-[#F5EFE4] border border-tear-border px-2.5 py-1 rounded-full">
+            <span className="flex items-center gap-1 text-[11.5px] font-medium text-[#A89890] bg-[#F5EFE4] border border-tear-border px-2.5 py-1 rounded-full whitespace-nowrap">
               <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
                 <polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5" fill="#A89890" />
               </svg>
@@ -42,23 +42,25 @@ export default function ResearchNav({ productName, sessionId, onDownloadPdf, tok
         )}
       </div>
 
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-2 md:gap-2.5 flex-shrink-0">
         <button
           onClick={onDownloadPdf}
-          className="flex items-center gap-1.5 px-3.5 py-[7px] text-[12px] font-medium text-tear-muted border-[1.5px] border-tear-border rounded-lg hover:border-tear-primary hover:text-tear-primary transition-colors duration-150"
+          aria-label="Download PDF"
+          className="flex items-center gap-1.5 px-2.5 md:px-3.5 py-[7px] text-[12px] font-medium text-tear-muted border-[1.5px] border-tear-border rounded-lg hover:border-tear-primary hover:text-tear-primary transition-colors duration-150"
         >
           <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
             <path d="M7 1v7.5M4.5 6.5 7 9l2.5-2.5" />
             <path d="M1.5 10.5v1a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-1" />
           </svg>
-          PDF
+          <span className="hidden sm:inline">PDF</span>
         </button>
 
         <button
           onClick={() => router.push(isViewingHistory ? `/deck/${sessionId}` : `/deck-config/${sessionId}`)}
-          className="flex items-center gap-1.5 px-4 py-[7px] text-[12px] font-semibold text-white bg-tear-primary rounded-lg hover:bg-tear-primary-dark transition-colors duration-150"
+          className="flex items-center gap-1.5 px-3 md:px-4 py-[7px] text-[12px] font-semibold text-white bg-tear-primary rounded-lg hover:bg-tear-primary-dark transition-colors duration-150 whitespace-nowrap"
         >
-          {isViewingHistory ? "View Deck" : "Build Deck"}
+          <span className="hidden sm:inline">{isViewingHistory ? "View Deck" : "Build Deck"}</span>
+          <span className="sm:hidden">Deck</span>
           <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M2.5 7h9M8 3.5 11.5 7 8 10.5" />
           </svg>

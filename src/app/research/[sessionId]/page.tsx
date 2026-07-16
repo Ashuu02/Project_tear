@@ -22,6 +22,8 @@ export default function ResearchPage() {
   const [ready, setReady]                     = useState(false);
   const [activeSection, setActiveSection]     = useState("exec_summary");
   const [tokenCount, setTokenCount]           = useState<number | undefined>();
+  const [sheetOpen, setSheetOpen]             = useState(false);
+  const [mobileTab, setMobileTab]             = useState<"contents" | "sources">("contents");
 
   // Local copy of researchDoc that chatbot can modify
   const [localResearchDoc, setLocalResearchDoc] = useState<ResearchDoc | null>(null);
@@ -143,11 +145,13 @@ export default function ResearchPage() {
         isViewingHistory={isViewingHistory}
       />
       <div className="flex-1 flex overflow-hidden">
-        <SectionSidebar
-          activeSection={activeSection}
-          onSectionClick={setActiveSection}
-          sections={docForDisplay?.sections}
-        />
+        <div className="hidden md:flex md:flex-shrink-0">
+          <SectionSidebar
+            activeSection={activeSection}
+            onSectionClick={setActiveSection}
+            sections={docForDisplay?.sections}
+          />
+        </div>
         <DocumentBody
           productName={productName}
           activeSection={activeSection}
@@ -157,14 +161,84 @@ export default function ResearchPage() {
           onUndoSection={handleUndoSection}
         />
         {docForDisplay && (
-          <RightPanel
-            sources={docForDisplay.sources}
-            productName={productName}
-            researchDoc={docForDisplay}
-            onSectionUpdate={handleSectionUpdate}
-          />
+          <div className="hidden md:flex md:flex-shrink-0">
+            <RightPanel
+              sources={docForDisplay.sources}
+              productName={productName}
+              researchDoc={docForDisplay}
+              onSectionUpdate={handleSectionUpdate}
+            />
+          </div>
         )}
       </div>
+
+      {/* Mobile: bottom sheet peek bar for ToC + sources */}
+      <button
+        onClick={() => setSheetOpen(true)}
+        className="md:hidden flex-shrink-0 flex items-center justify-between px-5 py-3 bg-[#F5EFE4] border-t-[1.5px] border-tear-border"
+      >
+        <div className="flex items-center gap-2">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+            <line x1="2.5" y1="4" x2="13.5" y2="4" stroke="#7C6E68" strokeWidth="1.4" strokeLinecap="round" />
+            <line x1="2.5" y1="8" x2="13.5" y2="8" stroke="#7C6E68" strokeWidth="1.4" strokeLinecap="round" />
+            <line x1="2.5" y1="12" x2="9" y2="12" stroke="#7C6E68" strokeWidth="1.4" strokeLinecap="round" />
+          </svg>
+          <span className="text-[13px] font-semibold text-tear-text">Contents &amp; sources</span>
+        </div>
+        <span className="font-mono text-[12px] text-tear-primary">
+          {docForDisplay?.sources?.length ?? 0} sources
+        </span>
+      </button>
+
+      {sheetOpen && (
+        <div className="md:hidden fixed inset-0 z-40 flex flex-col justify-end">
+          <div
+            className="absolute inset-0 bg-black/30"
+            onClick={() => setSheetOpen(false)}
+          />
+          <div className="relative bg-tear-bg rounded-t-2xl h-[75vh] flex flex-col overflow-hidden z-10 border-t border-tear-border">
+            <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
+              <div className="w-9 h-1 rounded-full bg-tear-chip-border" />
+            </div>
+            <div className="flex px-5 pb-3 gap-2 flex-shrink-0">
+              <button
+                onClick={() => setMobileTab("contents")}
+                className={`flex-1 text-center py-2 rounded-lg text-[13px] font-medium transition-colors duration-150 ${
+                  mobileTab === "contents" ? "bg-tear-text text-white" : "bg-[#F5EFE4] text-tear-muted border border-tear-border"
+                }`}
+              >
+                Contents
+              </button>
+              <button
+                onClick={() => setMobileTab("sources")}
+                className={`flex-1 text-center py-2 rounded-lg text-[13px] font-medium transition-colors duration-150 ${
+                  mobileTab === "sources" ? "bg-tear-text text-white" : "bg-[#F5EFE4] text-tear-muted border border-tear-border"
+                }`}
+              >
+                Sources &amp; Ask
+              </button>
+            </div>
+            <div className="flex-1 flex overflow-hidden">
+              {mobileTab === "contents" ? (
+                <SectionSidebar
+                  activeSection={activeSection}
+                  onSectionClick={(id) => { setActiveSection(id); setSheetOpen(false); }}
+                  sections={docForDisplay?.sections}
+                />
+              ) : (
+                docForDisplay && (
+                  <RightPanel
+                    sources={docForDisplay.sources}
+                    productName={productName}
+                    researchDoc={docForDisplay}
+                    onSectionUpdate={handleSectionUpdate}
+                  />
+                )
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

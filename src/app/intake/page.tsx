@@ -90,7 +90,7 @@ export default function IntakePage() {
   return (
     <div className="min-h-screen bg-tear-bg flex flex-col font-dm-sans text-tear-text">
       <IntakeNav />
-      <div className="flex-1 overflow-y-auto py-10 px-6 pb-20">
+      <div className="flex-1 overflow-y-auto py-6 md:py-10 px-5 md:px-6 pb-6 md:pb-20">
         <div className="max-w-[720px] mx-auto flex flex-col gap-8">
 
           <ProductCard productName={productName} />

@@ -14,7 +14,7 @@ interface RightPanelProps {
 
 export default function RightPanel({ sources, productName, researchDoc, onSectionUpdate }: RightPanelProps) {
   return (
-    <div className="w-[280px] flex-shrink-0 border-l border-[#EDE5DC] flex flex-col overflow-hidden">
+    <div className="w-full md:w-[280px] flex-1 md:flex-none md:flex-shrink-0 border-l-0 md:border-l border-[#EDE5DC] flex flex-col overflow-hidden">
       <CitationsPanel sources={sources} />
       <ResearchChatbot
         productName={productName}

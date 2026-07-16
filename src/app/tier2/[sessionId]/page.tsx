@@ -125,7 +125,7 @@ export default function Tier2Page() {
   return (
     <div className="min-h-screen bg-tear-bg flex flex-col font-dm-sans text-tear-text">
       {/* Nav */}
-      <nav className="flex items-center justify-between px-12 py-[22px] border-b border-[#F0E8DF] animate-fade-in">
+      <nav className="flex items-center justify-between px-6 md:px-12 py-4 md:py-[22px] border-b border-[#F0E8DF] animate-fade-in">
         <Link href="/" className="flex items-center gap-2.5">
           <svg width="20" height="20" viewBox="0 0 22 22" fill="none">
             <circle cx="9.5" cy="9.5" r="7" stroke="#C2451E" strokeWidth="1.7" fill="none" />
@@ -133,21 +133,21 @@ export default function Tier2Page() {
           </svg>
           <span className="font-lora text-[19px] font-semibold tracking-tight text-tear-text">Tear</span>
         </Link>
-        <div className="flex items-center gap-3">
-          <span className="text-[12px] font-medium text-tear-primary bg-[#FBF0EB] border border-[#F0C9B8] px-3 py-1 rounded-full">
+        <div className="flex items-center gap-2 md:gap-3">
+          <span className="hidden sm:inline text-[12px] font-medium text-tear-primary bg-[#FBF0EB] border border-[#F0C9B8] px-3 py-1 rounded-full whitespace-nowrap">
             In-Depth Questions
           </span>
-          <span className="text-[13px] font-normal text-[#A89890] tracking-[0.02em]">Step 3 of 5</span>
+          <span className="text-[13px] font-normal text-[#A89890] tracking-[0.02em] whitespace-nowrap">Step 3 of 5</span>
         </div>
       </nav>
 
-      <div className="flex-1 overflow-y-auto py-10 px-6 pb-24">
+      <div className="flex-1 overflow-y-auto py-6 md:py-10 px-5 md:px-6 pb-6 md:pb-24">
         <div className="max-w-[720px] mx-auto flex flex-col gap-8">
 
           <ProductCard productName={productName} />
 
           {/* Phase label */}
-          <div className="flex items-center gap-3 animate-fade-up-1">
+          <div className="flex items-center gap-3 flex-wrap animate-fade-up-1">
             <div className="flex items-center gap-2 bg-[#FBF0EB] border border-[#F0C9B8] px-3 py-1.5 rounded-full">
               <div className="w-1.5 h-1.5 rounded-full bg-tear-primary" />
               <span className="text-[11px] font-semibold text-tear-primary tracking-[0.12em] uppercase">
@@ -193,8 +193,8 @@ export default function Tier2Page() {
           )}
 
           {/* Footer */}
-          <div className="flex items-center justify-between gap-6 mt-2 animate-fade-up-4">
-            <div className="flex-1 flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-4 md:gap-6 mt-2 animate-fade-up-4 sticky bottom-0 bg-tear-bg pt-4 pb-4 md:pb-0 md:static md:bg-transparent border-t md:border-t-0 border-[#EDE5DC] -mx-5 px-5 md:mx-0 md:px-0">
+            <div className="flex-1 flex flex-col gap-2 min-w-0">
               <div className="h-1 bg-tear-border rounded-full overflow-hidden">
                 <div
                   className="h-full bg-tear-primary rounded-full transition-all duration-500 ease-out"
@@ -206,10 +206,10 @@ export default function Tier2Page() {
               </span>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
               <button
                 onClick={handleBack}
-                className="px-5 py-3.5 text-[15px] font-medium text-tear-muted hover:text-tear-text transition-colors duration-150"
+                className="px-3 md:px-5 py-3.5 text-[15px] font-medium text-tear-muted hover:text-tear-text transition-colors duration-150 whitespace-nowrap"
               >
                 ← Back
               </button>
@@ -217,7 +217,7 @@ export default function Tier2Page() {
                 onClick={handleContinue}
                 disabled={!canContinue()}
                 className={`
-                  px-7 py-3.5 text-[15px] font-medium text-white rounded-lg border-none
+                  px-5 md:px-7 py-3.5 text-[15px] font-medium text-white rounded-lg border-none
                   transition-all duration-150 whitespace-nowrap
                   ${canContinue()
                     ? "bg-tear-primary hover:opacity-90 cursor-pointer"

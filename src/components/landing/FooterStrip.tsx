@@ -6,8 +6,8 @@ const STATS = [
 
 export default function FooterStrip() {
   return (
-    <footer className="border-t border-[#F0E8DF] px-12 py-6 animate-fade-in-5">
-      <div className="flex items-center justify-center gap-12 flex-wrap">
+    <footer className="border-t border-[#F0E8DF] px-6 md:px-12 py-5 md:py-6 animate-fade-in-5">
+      <div className="flex items-center justify-center gap-4 md:gap-12 flex-wrap">
         {STATS.flatMap((stat, i) =>
           i === 0
             ? [<span key={stat} className="text-[13px] text-[#A89890] tracking-wide">{stat}</span>]
