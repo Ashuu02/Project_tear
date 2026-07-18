@@ -137,6 +137,8 @@ export default function PipelinePage() {
           }
           case "sources": {
             setSourceProgress({ crawled: data.crawled, total: data.total });
+            const crawlerPct = Math.min(95, Math.round((data.crawled / Math.max(data.total, 1)) * 100));
+            updateAgentItem("Crawler Agent", { progress: crawlerPct });
             break;
           }
           case "preview": {

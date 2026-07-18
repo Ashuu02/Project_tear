@@ -116,10 +116,10 @@ export async function GET(req: NextRequest) {
       try {
         // ── DEMO MODE ──────────────────────────────────────────────────────
         if (DEMO_MODE) {
-          send({ type: "agent", agent: "Question Agent", status: "running", message: `Validating ${productName}…` });
+          send({ type: "agent", agent: "Question Agent", status: "running", message: `Validating ${productName}…`, progress: 40 });
           await sleep(1200);
           send({ type: "agent", agent: "Question Agent", status: "done", message: `${productName} confirmed as a software product` });
-          send({ type: "agent", agent: "Crawler Agent", status: "running", message: "Searching the web…" });
+          send({ type: "agent", agent: "Crawler Agent", status: "running", message: "Searching the web…", progress: 0 });
           send({ type: "sources", crawled: 0, total: 5 });
           const mockDomains = ["notion.so", "techcrunch.com", "g2.com", "reddit.com", "bloomberg.com"];
           for (let i = 0; i < mockDomains.length; i++) {

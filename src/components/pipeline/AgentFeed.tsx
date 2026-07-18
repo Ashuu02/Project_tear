@@ -95,13 +95,16 @@ export default function AgentFeed({ productName, feedItems, activeOnMobile = tru
 
                 {/* Progress bar — shown for active items with a progress value */}
                 {item.status === "active" && typeof item.progress === "number" && (
-                  <div className="mt-1.5 w-full max-w-[280px]">
-                    <div className="h-[3px] bg-[#EDE5DC] rounded-full overflow-hidden">
+                  <div className="mt-1.5 flex items-center gap-2 w-full max-w-[300px]">
+                    <div className="flex-1 h-[3px] bg-[#EDE5DC] rounded-full overflow-hidden">
                       <div
                         className="h-full bg-tear-primary rounded-full transition-all duration-500 ease-out"
                         style={{ width: `${item.progress}%` }}
                       />
                     </div>
+                    <span className="text-[11px] font-semibold tabular-nums text-tear-primary w-[30px] text-right flex-shrink-0">
+                      {item.progress}%
+                    </span>
                   </div>
                 )}
 
