@@ -62,9 +62,6 @@ export default function Tier2Page() {
     setTier2Draft(step, answers);
   }, [ready, productName, sessionId, step, answers, TOTAL, setActiveSession, setTier2Draft]);
 
-  useEffect(() => {
-    return () => clearActiveSession();
-  }, [clearActiveSession]);
   const current = questions[step];
 
   const currentAnswer = answers[current?.id ?? ""];
