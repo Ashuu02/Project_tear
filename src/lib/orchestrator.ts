@@ -42,7 +42,7 @@ export async function runOrchestrator(input: OrchestratorInput): Promise<Orchest
         productName: z.string().describe("The exact product name to validate"),
       }),
       execute: async ({ productName: name }: { productName: string }) => {
-        send({ type: "agent", agent: "Question Agent", status: "running", message: `Validating ${name}…` });
+        send({ type: "agent", agent: "Question Agent", status: "running", message: `Validating ${name}…`, progress: 40 });
         const result = await runQuestionAgent(name, modelParam, sessionId);
         send({ type: "agent", agent: "Question Agent", status: "done", message: result.summary });
         return result.summary;
