@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { useSessionStore } from "@/store/session";
 import type { DeckSlide, DeckData } from "@/types/teardown";
 import type { SlideInfo } from "./SlideThumbnails";
@@ -353,8 +354,34 @@ interface SlideCanvasProps {
   slideIndex: number;
 }
 
+// Slides are authored against this native resolution (standard 16:9 deck size).
+// The canvas below scales the whole slide to fit whatever space is available —
+// phone, tablet, or desktop — instead of letting the fixed-px content overflow.
+const SLIDE_WIDTH = 1280;
+const SLIDE_HEIGHT = 720;
+const MAX_CANVAS_WIDTH = 1024; // matches the previous max-w-5xl desktop cap
+
 export default function SlideCanvas({ productName, slideIndex }: SlideCanvasProps) {
   const deckData = useSessionStore((s) => s.deckData);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const updateScale = () => {
+      const { width, height } = el.getBoundingClientRect();
+      if (!width || !height) return;
+      const availableWidth = Math.min(width, MAX_CANVAS_WIDTH);
+      setScale(Math.min(availableWidth / SLIDE_WIDTH, height / SLIDE_HEIGHT));
+    };
+
+    updateScale();
+    const observer = new ResizeObserver(updateScale);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const slide: DeckSlide | undefined = deckData?.slides[slideIndex];
 
@@ -369,12 +396,27 @@ export default function SlideCanvas({ productName, slideIndex }: SlideCanvasProp
   const render = RENDERERS[activeSlide.type] ?? RENDERERS.cover;
 
   return (
-    <div className="flex-1 min-h-0 flex items-center justify-center p-4 md:p-10 bg-[#EAE3DA]">
-      <div
-        className="bg-white shadow-[0_4px_48px_rgba(0,0,0,0.14)] rounded-[12px] overflow-hidden w-full max-w-5xl"
-        style={{ aspectRatio: "16/9" }}
-      >
-        {render(activeSlide)}
+    <div className="flex-1 min-h-0 p-4 md:p-10 bg-[#EAE3DA]">
+      <div ref={containerRef} className="w-full h-full flex items-center justify-center">
+        <div
+          className="bg-white shadow-[0_4px_48px_rgba(0,0,0,0.14)] rounded-[12px] overflow-hidden"
+          style={{
+            width: SLIDE_WIDTH * scale,
+            height: SLIDE_HEIGHT * scale,
+            opacity: scale ? 1 : 0,
+          }}
+        >
+          <div
+            style={{
+              width: SLIDE_WIDTH,
+              height: SLIDE_HEIGHT,
+              transform: `scale(${scale})`,
+              transformOrigin: "top left",
+            }}
+          >
+            {render(activeSlide)}
+          </div>
+        </div>
       </div>
     </div>
   );
