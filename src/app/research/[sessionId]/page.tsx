@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSessionStore } from "@/store/session";
 import ResearchNav from "@/components/research/ResearchNav";
@@ -8,6 +8,7 @@ import SectionSidebar from "@/components/research/SectionSidebar";
 import DocumentBody from "@/components/research/DocumentBody";
 import RightPanel from "@/components/research/RightPanel";
 import type { ResearchDoc } from "@/types/teardown";
+import { track } from "@/lib/posthog";
 
 const MAX_VERSIONS = 5;
 
@@ -21,6 +22,7 @@ export default function ResearchPage() {
 
   const [ready, setReady]                     = useState(false);
   const [activeSection, setActiveSection]     = useState("exec_summary");
+  const trackedRef = useRef(false);
   const [tokenCount, setTokenCount]           = useState<number | undefined>();
   const [sheetOpen, setSheetOpen]             = useState(false);
   const [mobileTab, setMobileTab]             = useState<"contents" | "sources">("contents");
@@ -54,7 +56,11 @@ export default function ResearchPage() {
     if (researchDoc) {
       setLocalResearchDoc(researchDoc);
     }
-  }, [researchDoc]);
+    if (ready && productName && researchDoc && !trackedRef.current) {
+      trackedRef.current = true;
+      track("research_viewed", { product_name: productName, sections_count: researchDoc.sections?.length ?? 0 });
+    }
+  }, [researchDoc, ready, productName]);
 
   // Fetch token count on mount
   useEffect(() => {

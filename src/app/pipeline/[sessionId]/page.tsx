@@ -9,6 +9,7 @@ import TeardownPreview from "@/components/pipeline/TeardownPreview";
 import type { FeedItem } from "@/components/pipeline/AgentFeed";
 import type { ResearchDoc } from "@/types/teardown";
 import { useTeardownHistory, getProductCategory } from "@/store/teardownHistory";
+import { track } from "@/lib/posthog";
 
 const INITIAL_FEED: FeedItem[] = [
   { id: "q", agent: "Question Agent", message: "Analyzing product…",            status: "queued" },
@@ -56,6 +57,7 @@ export default function PipelinePage() {
   }
 
   function handleStop() {
+    track("pipeline_stopped", { product_name: productName });
     esRef.current?.close();
     esRef.current = null;
     setStopped(true);
@@ -89,6 +91,7 @@ export default function PipelinePage() {
 
     const es = new EventSource(`/api/stream/${sessionId}?${params}`);
     esRef.current = es;
+    track("pipeline_started", { product_name: productName, model: selectedModel ?? "claude", depth: researchDepth ?? "standard" });
 
     es.onmessage = (e) => {
       try {
@@ -147,6 +150,7 @@ export default function PipelinePage() {
           }
           case "done": {
             clearActiveSession();
+            track("pipeline_completed", { product_name: productName, sources_count: crawlCountRef.current });
             const doc = data.document as ResearchDoc;
             setResearchDoc(doc);
             addEntry({
@@ -164,6 +168,7 @@ export default function PipelinePage() {
             break;
           }
           case "error": {
+            track("pipeline_failed", { product_name: productName, error_message: data.message });
             setFeedItems((prev) =>
               prev.map((item) => {
                 if (item.status === "active") return { ...item, status: "error" as const, message: data.message };

@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSessionStore } from "@/store/session";
 import DeckNav from "@/components/deck/DeckNav";
 import SlideThumbnails from "@/components/deck/SlideThumbnails";
 import SlideCanvas, { getMockSlides, getSlidesInfo } from "@/components/deck/SlideCanvas";
 import { getMockDeckData } from "@/data/mockPipeline";
+import { track } from "@/lib/posthog";
 
 export default function DeckPage() {
   const router      = useRouter();
@@ -17,6 +18,7 @@ export default function DeckPage() {
 
   const [ready, setReady]               = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const trackedRef = useRef(false);
 
   useEffect(() => {
     const t = setTimeout(() => setReady(true), 50);
@@ -26,6 +28,13 @@ export default function DeckPage() {
   useEffect(() => {
     if (ready && !productName) router.replace("/");
   }, [ready, productName, router]);
+
+  useEffect(() => {
+    if (ready && productName && !trackedRef.current) {
+      trackedRef.current = true;
+      track("deck_viewed", { product_name: productName });
+    }
+  }, [ready, productName]);
 
   const slides = deckData
     ? getSlidesInfo(deckData)
