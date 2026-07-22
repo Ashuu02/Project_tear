@@ -10,6 +10,7 @@ import IntakeNav from "@/components/intake/IntakeNav";
 import ProductCard from "@/components/intake/ProductCard";
 import OptionGrid from "@/components/intake/OptionGrid";
 import MultiOptionGrid from "@/components/intake/MultiOptionGrid";
+import posthog from "posthog-js";
 
 export default function Tier2Page() {
   const router          = useRouter();
@@ -94,6 +95,10 @@ export default function Tier2Page() {
       setStep((s) => s + 1);
       return;
     }
+    posthog.capture('intake_tier2_completed', {
+      product_name: productName,
+      question_count: TOTAL,
+    });
     clearActiveSession();
     clearTier2Draft();
     setTier2Answers(answers);

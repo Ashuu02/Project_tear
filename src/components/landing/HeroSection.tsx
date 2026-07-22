@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSessionStore } from "@/store/session";
 import { PRODUCTS } from "@/data/products";
 import { MODEL_META, type ModelProvider } from "@/lib/providers";
+import posthog from "posthog-js";
 
 const EXAMPLES = ["Notion", "Figma", "Shopify"];
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
@@ -44,6 +45,10 @@ export default function HeroSection() {
   function handleStart(name?: string) {
     const trimmed = (name ?? value).trim();
     if (!trimmed) return;
+    posthog.capture('teardown_started', {
+      product_name: trimmed,
+      model: selectedModel,
+    });
     startNewTeardown(trimmed);
     setSuggestions([]);
     router.push("/intake");

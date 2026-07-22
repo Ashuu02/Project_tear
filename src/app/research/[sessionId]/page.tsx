@@ -8,6 +8,7 @@ import SectionSidebar from "@/components/research/SectionSidebar";
 import DocumentBody from "@/components/research/DocumentBody";
 import RightPanel from "@/components/research/RightPanel";
 import type { ResearchDoc } from "@/types/teardown";
+import posthog from "posthog-js";
 
 const MAX_VERSIONS = 5;
 
@@ -121,6 +122,11 @@ export default function ResearchPage() {
 
   async function handleDownloadPdf() {
     if (!researchDoc) return;
+    posthog.capture('research_pdf_downloaded', {
+      product_name: productName,
+      session_id: sessionId,
+      sections_count: researchDoc.sections?.length ?? 0,
+    });
     const { downloadResearchPdf } = await import("@/lib/downloadPdf");
     await downloadResearchPdf(productName, researchDoc);
   }

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useSessionStore } from "@/store/session";
 import type { ResearchDoc } from "@/types/teardown";
+import posthog from "posthog-js";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -63,6 +64,12 @@ export default function ResearchChatbot({ productName, researchDoc, onSectionUpd
     const trimmed = text.trim();
     if (!trimmed || isLoading) return;
 
+    posthog.capture('chatbot_message_sent', {
+      product_name: productName,
+      session_id: sessionId,
+      message_length: trimmed.length,
+    });
+
     const userMsg: ChatMessage = { role: "user", content: trimmed };
     const newHistory = [...messages, userMsg];
     setMessages(newHistory);
@@ -95,11 +102,21 @@ export default function ResearchChatbot({ productName, researchDoc, onSectionUpd
 
       // Handle section update from response body
       if (data.sectionUpdate) {
+        posthog.capture('section_edit_applied', {
+          product_name: productName,
+          session_id: sessionId,
+          section_id: data.sectionUpdate.sectionId,
+        });
         onSectionUpdate(data.sectionUpdate.sectionId, data.sectionUpdate.newContent);
       } else {
         // Also parse from the raw reply text
         const parsed = parseSectionUpdate(data.reply);
         if (parsed) {
+          posthog.capture('section_edit_applied', {
+            product_name: productName,
+            session_id: sessionId,
+            section_id: parsed.sectionId,
+          });
           onSectionUpdate(parsed.sectionId, parsed.newContent);
         }
       }

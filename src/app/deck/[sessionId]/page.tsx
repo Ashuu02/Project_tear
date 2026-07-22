@@ -7,6 +7,7 @@ import DeckNav from "@/components/deck/DeckNav";
 import SlideThumbnails from "@/components/deck/SlideThumbnails";
 import SlideCanvas, { getMockSlides, getSlidesInfo } from "@/components/deck/SlideCanvas";
 import { getMockDeckData } from "@/data/mockPipeline";
+import posthog from "posthog-js";
 
 export default function DeckPage() {
   const router      = useRouter();
@@ -48,6 +49,11 @@ export default function DeckPage() {
   }, [prev, next]);
 
   async function handleDownloadPptx() {
+    posthog.capture('deck_pptx_downloaded', {
+      product_name: productName,
+      session_id: sessionId,
+      slide_count: slides.length,
+    });
     const data = deckData ?? getMockDeckData(productName);
     const { downloadPptx } = await import("@/lib/downloadPptx");
     await downloadPptx(productName, data, sessionId);

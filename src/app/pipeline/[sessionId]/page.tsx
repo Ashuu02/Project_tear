@@ -9,6 +9,7 @@ import TeardownPreview from "@/components/pipeline/TeardownPreview";
 import type { FeedItem } from "@/components/pipeline/AgentFeed";
 import type { ResearchDoc } from "@/types/teardown";
 import { useTeardownHistory, getProductCategory } from "@/store/teardownHistory";
+import posthog from "posthog-js";
 
 const INITIAL_FEED: FeedItem[] = [
   { id: "q", agent: "Question Agent", message: "Analyzing product…",            status: "queued" },
@@ -59,6 +60,10 @@ export default function PipelinePage() {
     esRef.current?.close();
     esRef.current = null;
     setStopped(true);
+    posthog.capture('pipeline_stopped_by_user', {
+      product_name: productName,
+      session_id: sessionId,
+    });
     clearActiveSession();
     setFeedItems((prev) =>
       prev.map((item) =>
@@ -149,6 +154,14 @@ export default function PipelinePage() {
             clearActiveSession();
             const doc = data.document as ResearchDoc;
             setResearchDoc(doc);
+            posthog.capture('pipeline_analysis_completed', {
+              product_name: productName,
+              session_id: sessionId,
+              sections_count: doc?.sections?.length ?? 0,
+              sources_count: crawlCountRef.current,
+              model: selectedModel ?? 'claude',
+              depth: researchDepth ?? 'standard',
+            });
             addEntry({
               sessionId,
               productName,

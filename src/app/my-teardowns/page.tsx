@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Navbar from "@/components/landing/Navbar";
 import { useTeardownHistory, type TeardownHistoryEntry } from "@/store/teardownHistory";
 import { useSessionStore } from "@/store/session";
+import posthog from "posthog-js";
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
@@ -223,6 +224,11 @@ export default function MyTeardownsPage() {
   const [hydrated, setHydrated] = useState(false);
 
   function handleOpenEntry(entry: TeardownHistoryEntry) {
+    posthog.capture('my_teardowns_entry_opened', {
+      product_name: entry.productName,
+      category: entry.category,
+      sources_count: entry.sourcesCount,
+    });
     loadFromHistory({
       sessionId: entry.sessionId,
       productName: entry.productName,

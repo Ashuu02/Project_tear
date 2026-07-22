@@ -8,6 +8,7 @@ import ProductCard from "@/components/intake/ProductCard";
 import DimensionGrid from "@/components/intake/DimensionGrid";
 import OptionGrid from "@/components/intake/OptionGrid";
 import IntakeFooter from "@/components/intake/IntakeFooter";
+import posthog from "posthog-js";
 
 const TOTAL_STEPS = 3;
 
@@ -61,6 +62,12 @@ export default function IntakePage() {
 
   function handleContinue() {
     if (step < TOTAL_STEPS) { setStep((s) => s + 1); return; }
+    posthog.capture('intake_tier1_completed', {
+      product_name: productName,
+      dimensions: Array.from(dimensions),
+      goal,
+      depth,
+    });
     setTier1Answers({ dimensions: Array.from(dimensions), goal, depth });
     router.push(`/tier2/${sessionId}`);
   }

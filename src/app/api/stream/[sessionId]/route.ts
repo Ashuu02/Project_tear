@@ -9,6 +9,7 @@ import { normalizeProductKey, getCachedSections, saveCachedSections, bumpReuseCo
 import { runOrchestrator } from "@/lib/orchestrator";
 import { resolveDepthConfig } from "@/lib/agents/types";
 import type { ModelProvider } from "@/lib/providers";
+import { getPostHogServerClient } from "@/lib/posthog-server";
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
@@ -215,6 +216,22 @@ export async function GET(req: NextRequest) {
         if (!DEMO_MODE) {
           await recordTeardownComplete(sessionId, docData, crawlCount);
 
+          const phServer = getPostHogServerClient();
+          phServer.capture({
+            distinctId: sessionId,
+            event: 'teardown_pipeline_completed',
+            properties: {
+              product_name: productName,
+              session_id: sessionId,
+              sections_count: docData.sections.length,
+              crawl_count: crawlCount,
+              model: modelParam,
+              reused_sections: reusedIds.length,
+              fresh_sections: sectionsNeeded.length,
+            },
+          });
+          await phServer.shutdown();
+
           if (freshDocData) {
             await saveCachedSections(productKey, category, freshDocData.sections, resolveSourcesBySection(freshDocData));
           }
@@ -235,6 +252,19 @@ export async function GET(req: NextRequest) {
         send({ type: "error", message: friendly });
         if (!DEMO_MODE) {
           await recordTeardownError(sessionId, friendly);
+
+          const phServer = getPostHogServerClient();
+          phServer.capture({
+            distinctId: sessionId,
+            event: 'teardown_pipeline_error',
+            properties: {
+              product_name: productName,
+              session_id: sessionId,
+              model: modelParam,
+              error_message: friendly,
+            },
+          });
+          await phServer.shutdown();
         }
       } finally {
         controller.close();

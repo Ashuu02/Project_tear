@@ -6,6 +6,7 @@ import { getDocumentModel, resolveModelName, googleTools, type ModelProvider } f
 import { tavilySearch } from "@/lib/tavily";
 import { trackTokens } from "@/lib/tokenTracker";
 import type { ResearchDoc } from "@/types/teardown";
+import { getPostHogServerClient } from "@/lib/posthog-server";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -146,6 +147,22 @@ Minimize tokens — be concise.`;
     }
 
     const sectionUpdate = parseSectionUpdate(resultText);
+
+    const phServer = getPostHogServerClient();
+    phServer.capture({
+      distinctId: sessionId,
+      event: 'research_chat_completed',
+      properties: {
+        product_name: productName,
+        session_id: sessionId,
+        model: model,
+        has_section_update: !!sectionUpdate,
+        is_re_crawl: isReCrawl,
+        input_tokens: usage?.inputTokens,
+        output_tokens: usage?.outputTokens,
+      },
+    });
+    await phServer.shutdown();
 
     return NextResponse.json({
       reply: resultText,
