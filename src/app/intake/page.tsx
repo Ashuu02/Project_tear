@@ -8,6 +8,7 @@ import ProductCard from "@/components/intake/ProductCard";
 import DimensionGrid from "@/components/intake/DimensionGrid";
 import OptionGrid from "@/components/intake/OptionGrid";
 import IntakeFooter from "@/components/intake/IntakeFooter";
+import { track } from "@/lib/posthog";
 
 const TOTAL_STEPS = 3;
 
@@ -52,6 +53,10 @@ export default function IntakePage() {
     if (ready && !productName) router.replace("/");
   }, [ready, productName, router]);
 
+  useEffect(() => {
+    if (ready && productName) track("tier1_started", { product_name: productName });
+  }, [ready, productName]);
+
   function canContinue() {
     if (step === 1) return dimensions.size > 0;
     if (step === 2) return !!goal;
@@ -61,6 +66,7 @@ export default function IntakePage() {
 
   function handleContinue() {
     if (step < TOTAL_STEPS) { setStep((s) => s + 1); return; }
+    track("tier1_completed", { product_name: productName, goal, depth, dimensions: Array.from(dimensions) });
     setTier1Answers({ dimensions: Array.from(dimensions), goal, depth });
     router.push(`/tier2/${sessionId}`);
   }

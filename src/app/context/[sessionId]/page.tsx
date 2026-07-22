@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSessionStore } from "@/store/session";
+import { track } from "@/lib/posthog";
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
 const ACCEPTED_TYPES = [".pdf", ".txt", ".doc", ".docx"];
@@ -25,9 +26,10 @@ export default function ContextPage() {
   const productName    = useSessionStore((s) => s.productName);
   const sessionId      = useSessionStore((s) => s.sessionId);
   const tier2Answers   = useSessionStore((s) => s.tier2Answers);
-  const setUserContext = useSessionStore((s) => s.setUserContext);
-  const researchDepth  = useSessionStore((s) => s.researchDepth);
-  const setResearchDepth = useSessionStore((s) => s.setResearchDepth);
+  const setUserContext    = useSessionStore((s) => s.setUserContext);
+  const researchDepth     = useSessionStore((s) => s.researchDepth);
+  const setResearchDepth  = useSessionStore((s) => s.setResearchDepth);
+  const setActiveSession  = useSessionStore((s) => s.setActiveSession);
 
   const [ready, setReady]             = useState(false);
   const [textValue, setTextValue]     = useState("");
@@ -58,6 +60,18 @@ export default function ContextPage() {
   useEffect(() => {
     if (ready && (!productName || !tier2Answers)) router.replace("/");
   }, [ready, productName, tier2Answers, router]);
+
+  useEffect(() => {
+    if (!ready || !productName || !sessionId) return;
+    setActiveSession({
+      sessionId,
+      productName,
+      stageLabel: "Additional Context",
+      progress: 80,
+      resumePath: `/context/${sessionId}`,
+    });
+    track("context_reached", { product_name: productName });
+  }, [ready, productName, sessionId, setActiveSession]);
 
   // Auto-grow textarea
   useEffect(() => {
@@ -125,6 +139,12 @@ export default function ContextPage() {
 
   async function proceed(skip: boolean) {
     setIsSubmitting(true);
+    track("pipeline_initiated", {
+      product_name: productName,
+      skipped_context: skip,
+      has_text: textValue.trim().length > 0,
+      has_file: !!file,
+    });
     try {
       if (skip) {
         setUserContext(null);

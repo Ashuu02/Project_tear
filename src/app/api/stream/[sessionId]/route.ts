@@ -3,6 +3,7 @@ import type { ResearchDoc, ResearchSection, TeardownSource } from "@/types/teard
 import { sleep, getMockResearchDoc } from "@/data/mockPipeline";
 import { trackCacheReuse } from "@/lib/tokenTracker";
 import { recordTeardownStart, recordTeardownComplete, recordTeardownError } from "@/lib/adminTeardowns";
+import { logPipelineEvent } from "@/lib/analytics";
 import { getProductCategory } from "@/lib/productCategory";
 import { runHallucinationCheck } from "@/lib/hallucinationCheck";
 import { normalizeProductKey, getCachedSections, saveCachedSections, bumpReuseCount, resolveSourcesBySection, type CachedSectionEntry } from "@/lib/researchCache";
@@ -111,6 +112,7 @@ export async function GET(req: NextRequest) {
 
       if (!DEMO_MODE) {
         await recordTeardownStart(sessionId, productName, getProductCategory(productName), modelParam, tier1, tier2);
+        await logPipelineEvent("pipeline_started", sessionId, { product_name: productName, model: modelParam, depth: depthConfig });
       }
 
       try {
@@ -214,6 +216,13 @@ export async function GET(req: NextRequest) {
 
         if (!DEMO_MODE) {
           await recordTeardownComplete(sessionId, docData, crawlCount);
+          await logPipelineEvent("pipeline_completed", sessionId, {
+            product_name: productName,
+            sections_count: docData.sections.length,
+            crawl_count: crawlCount,
+            fresh_sections: sectionsNeeded.length,
+            reused_sections: reusedIds.length,
+          });
 
           if (freshDocData) {
             await saveCachedSections(productKey, category, freshDocData.sections, resolveSourcesBySection(freshDocData));
@@ -235,6 +244,7 @@ export async function GET(req: NextRequest) {
         send({ type: "error", message: friendly });
         if (!DEMO_MODE) {
           await recordTeardownError(sessionId, friendly);
+          await logPipelineEvent("pipeline_failed", sessionId, { product_name: productName, error: friendly });
         }
       } finally {
         controller.close();

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Lora, DM_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import ActiveSessionBar from "@/components/ActiveSessionBar";
+import { PHProvider } from "./providers";
+import { Analytics } from "@vercel/analytics/react";
 
 const lora = Lora({
   subsets: ["latin"],
@@ -40,8 +42,11 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${lora.variable} ${dmSans.variable} ${ibmPlexMono.variable}`}>
       <body className="font-dm-sans antialiased bg-tear-bg text-tear-text">
-        {children}
-        <ActiveSessionBar />
+        <PHProvider>
+          {children}
+          <ActiveSessionBar />
+          <Analytics />
+        </PHProvider>
       </body>
     </html>
   );

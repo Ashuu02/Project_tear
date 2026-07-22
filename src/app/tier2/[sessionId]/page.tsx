@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSessionStore } from "@/store/session";
@@ -10,6 +10,7 @@ import IntakeNav from "@/components/intake/IntakeNav";
 import ProductCard from "@/components/intake/ProductCard";
 import OptionGrid from "@/components/intake/OptionGrid";
 import MultiOptionGrid from "@/components/intake/MultiOptionGrid";
+import { track } from "@/lib/posthog";
 
 export default function Tier2Page() {
   const router          = useRouter();
@@ -26,6 +27,7 @@ export default function Tier2Page() {
   const [ready, setReady]   = useState(false);
   const [step, setStep]     = useState(0);
   const [answers, setAnswers] = useState<Tier2Answers>({});
+  const tier2StartedRef = useRef(false);
 
   const questions = useMemo(
     () => (tier1Answers ? selectTier2Questions(tier1Answers) : []),
@@ -49,6 +51,13 @@ export default function Tier2Page() {
   useEffect(() => {
     if (ready && (!productName || !tier1Answers)) router.replace("/");
   }, [ready, productName, tier1Answers, router]);
+
+  useEffect(() => {
+    if (ready && productName && TOTAL > 0 && !tier2StartedRef.current) {
+      tier2StartedRef.current = true;
+      track("tier2_started", { product_name: productName, question_count: TOTAL });
+    }
+  }, [ready, productName, TOTAL]);
 
   useEffect(() => {
     if (!ready || !productName || !sessionId || !TOTAL) return;
@@ -94,6 +103,7 @@ export default function Tier2Page() {
       setStep((s) => s + 1);
       return;
     }
+    track("tier2_completed", { product_name: productName, question_count: TOTAL });
     clearActiveSession();
     clearTier2Draft();
     setTier2Answers(answers);
