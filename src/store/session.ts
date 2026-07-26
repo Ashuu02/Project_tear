@@ -28,6 +28,8 @@ export interface ActiveSession {
   resumePath: string;
 }
 
+export type InsertTab = "templates" | "text" | "shapes" | "charts" | "images" | "icons";
+
 interface SessionState {
   sessionId: string;
   productName: string;
@@ -44,6 +46,9 @@ interface SessionState {
   activeSession: ActiveSession | null;
   researchDepth: ResearchDepth;
   isViewingHistory: boolean;
+  toolPanelCollapsed: boolean;
+  toolPanelActiveTab: InsertTab | null;
+  orientationBarDismissed: boolean;
   setProductName: (name: string) => void;
   setSelectedModel: (model: ModelProvider) => void;
   setResearchDepth: (depth: ResearchDepth) => void;
@@ -58,6 +63,9 @@ interface SessionState {
   setDeckThemeKey: (key: string) => void;
   setActiveSession: (s: ActiveSession) => void;
   clearActiveSession: () => void;
+  setToolPanelCollapsed: (collapsed: boolean) => void;
+  setToolPanelActiveTab: (tab: InsertTab | null) => void;
+  dismissOrientationBar: () => void;
   resetSession: () => void;
   startNewTeardown: (productName: string) => void;
   loadFromHistory: (entry: { sessionId: string; productName: string; researchDoc?: ResearchDoc; deckData?: DeckData }) => void;
@@ -81,6 +89,9 @@ export const useSessionStore = create<SessionState>()(
       activeSession: null,
       researchDepth: "standard",
       isViewingHistory: false,
+      toolPanelCollapsed: false,
+      toolPanelActiveTab: null,
+      orientationBarDismissed: false,
       setProductName: (name) => set({ productName: name }),
       setSelectedModel: (model) => set({ selectedModel: model }),
       setResearchDepth: (depth) => set({ researchDepth: depth }),
@@ -96,6 +107,9 @@ export const useSessionStore = create<SessionState>()(
       setDeckThemeKey: (key) => set({ deckThemeKey: key }),
       setActiveSession: (s) => set({ activeSession: s }),
       clearActiveSession: () => set({ activeSession: null }),
+      setToolPanelCollapsed: (collapsed) => set({ toolPanelCollapsed: collapsed }),
+      setToolPanelActiveTab: (tab) => set({ toolPanelActiveTab: tab }),
+      dismissOrientationBar: () => set({ orientationBarDismissed: true }),
       startNewTeardown: (name) =>
         set({
           sessionId: generateSessionId(),
@@ -112,6 +126,9 @@ export const useSessionStore = create<SessionState>()(
           activeSession: null,
           researchDepth: "standard",
           isViewingHistory: false,
+          toolPanelCollapsed: false,
+          toolPanelActiveTab: null,
+          orientationBarDismissed: false,
         }),
       loadFromHistory: (entry) =>
         set({
@@ -129,6 +146,9 @@ export const useSessionStore = create<SessionState>()(
           activeSession: null,
           researchDepth: "standard",
           isViewingHistory: true,
+          toolPanelCollapsed: false,
+          toolPanelActiveTab: null,
+          orientationBarDismissed: false,
         }),
       resetSession: () =>
         set({
@@ -147,6 +167,9 @@ export const useSessionStore = create<SessionState>()(
           activeSession: null,
           researchDepth: "standard",
           isViewingHistory: false,
+          toolPanelCollapsed: false,
+          toolPanelActiveTab: null,
+          orientationBarDismissed: false,
         }),
     }),
     { name: "tear-session" }

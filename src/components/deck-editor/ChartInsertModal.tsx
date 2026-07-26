@@ -53,20 +53,20 @@ export default function ChartInsertModal({ researchDoc, onInsert, onClose }: Cha
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60" onClick={onClose}>
       <div
-        className="w-[520px] max-h-[80vh] overflow-y-auto bg-[#221F1D] border border-white/15 rounded-xl shadow-2xl p-5 flex flex-col gap-4"
+        className="w-[520px] max-h-[80vh] overflow-y-auto bg-white border border-tear-border rounded-xl shadow-2xl p-5 flex flex-col gap-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <h3 className="text-[14px] font-semibold text-white">Insert chart</h3>
-          <button onClick={onClose} className="text-white/40 hover:text-white/80 text-xl leading-none">×</button>
+          <h3 className="text-[14px] font-semibold text-tear-text">Insert chart</h3>
+          <button onClick={onClose} className="text-tear-muted hover:text-tear-text text-xl leading-none">×</button>
         </div>
 
         <label className="flex flex-col gap-1">
-          <span className="text-[11px] text-white/50">Data source</span>
+          <span className="text-[11px] text-tear-muted">Data source</span>
           <select
             value={sourceIndex}
             onChange={(e) => setSourceIndex(Number(e.target.value))}
-            className="px-2 py-1.5 text-[12px] bg-black/20 border border-white/15 rounded text-white/80 focus:outline-none focus:border-tear-primary"
+            className="px-2 py-1.5 text-[12px] bg-tear-panel border border-tear-border rounded text-tear-text focus:outline-none focus:border-tear-primary"
           >
             <option value={-1}>Sample data (not from research)</option>
             {statSources.map((s, i) => (
@@ -74,19 +74,19 @@ export default function ChartInsertModal({ researchDoc, onInsert, onClose }: Cha
             ))}
           </select>
           {statSources.length === 0 && (
-            <span className="text-[10px] text-white/30">No research sections with chartable stats were found — using sample data.</span>
+            <span className="text-[10px] text-tear-chip">No research sections with chartable stats were found — using sample data.</span>
           )}
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-[11px] text-white/50">Chart type</span>
+          <span className="text-[11px] text-tear-muted">Chart type</span>
           <div className="grid grid-cols-4 gap-1.5">
             {CHART_TYPES.map((t) => (
               <button
                 key={t}
                 onClick={() => setChartType(t)}
                 className={`px-2 py-1.5 text-[11px] rounded-md border transition-colors ${
-                  chartType === t ? "bg-tear-primary text-white border-tear-primary" : "bg-black/20 text-white/60 border-white/15 hover:bg-white/10"
+                  chartType === t ? "bg-tear-primary text-white border-tear-primary" : "bg-tear-panel text-tear-muted border-tear-border hover:bg-[#F0E8DF]"
                 }`}
               >
                 {t[0].toUpperCase() + t.slice(1)}
@@ -145,12 +145,12 @@ export default function ChartInsertModal({ researchDoc, onInsert, onClose }: Cha
           )}
         </div>
         {(chartType === "radar" || chartType === "scatter") && (
-          <span className="text-[10px] text-white/30 -mt-2">Preview shown as a line — will render as {chartType} once inserted on the canvas.</span>
+          <span className="text-[10px] text-tear-chip -mt-2">Preview shown as a line — will render as {chartType} once inserted on the canvas.</span>
         )}
 
         <div className="flex justify-end gap-2 pt-1">
-          <button onClick={onClose} className="px-3 py-1.5 text-[12px] text-white/60 hover:text-white/90">Cancel</button>
-          <button onClick={handleInsert} className="px-4 py-1.5 text-[12px] font-medium bg-tear-primary text-white rounded-md hover:opacity-90">
+          <button onClick={onClose} className="px-3 py-1.5 text-[12px] text-tear-muted hover:text-tear-text">Cancel</button>
+          <button onClick={handleInsert} className="px-4 py-1.5 text-[12px] font-medium bg-tear-primary text-white rounded-md hover:bg-tear-primary-dark">
             Insert chart
           </button>
         </div>

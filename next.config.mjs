@@ -1,5 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async redirects() {
+    return [
+      {
+        source: "/deck/:sessionId",
+        destination: "/deck/:sessionId/edit",
+        permanent: true,
+      },
+    ];
+  },
   webpack: (config, { isServer }) => {
     if (isServer) {
       // konva's Node build optionally requires the native `canvas` package, which we

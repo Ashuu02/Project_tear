@@ -27,7 +27,7 @@ export default function ResearchNav({ productName, sessionId, onDownloadPdf, tok
       <div className="hidden md:flex items-center gap-2 min-w-0">
         <span className="text-[13px] font-normal text-tear-muted truncate">{productName}</span>
         <span className="text-[13px] text-tear-chip-border mx-1">·</span>
-        <span className="text-[13px] font-medium text-tear-text whitespace-nowrap">Research Document</span>
+        <span className="text-[13px] font-medium text-tear-text whitespace-nowrap">teardown doc</span>
 
         {typeof tokenCount === "number" && tokenCount > 0 && (
           <>
@@ -56,10 +56,10 @@ export default function ResearchNav({ productName, sessionId, onDownloadPdf, tok
         </button>
 
         <button
-          onClick={() => router.push(isViewingHistory ? `/deck/${sessionId}` : `/deck-config/${sessionId}`)}
+          onClick={() => router.push(isViewingHistory ? `/deck/${sessionId}/edit` : `/deck-config/${sessionId}`)}
           className="flex items-center gap-1.5 px-3 md:px-4 py-[7px] text-[12px] font-semibold text-white bg-tear-primary rounded-lg hover:bg-tear-primary-dark transition-colors duration-150 whitespace-nowrap"
         >
-          <span className="hidden sm:inline">{isViewingHistory ? "View Deck" : "Build Deck"}</span>
+          <span className="hidden sm:inline">{isViewingHistory ? "Edit Deck" : "Build Deck"}</span>
           <span className="sm:hidden">Deck</span>
           <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M2.5 7h9M8 3.5 11.5 7 8 10.5" />
