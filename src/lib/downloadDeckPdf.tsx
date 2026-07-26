@@ -12,7 +12,7 @@ const styles = StyleSheet.create({
 // reliable option rather than re-deriving each slide's layout in PDF primitives.
 function DeckPdfDoc({ productName, slideImages }: { productName: string; slideImages: string[] }) {
   return (
-    <Document title={`${productName} | Teardown Deck`} author="Tear">
+    <Document title={`${productName} | Deck`} author="Tear">
       {slideImages.map((src, i) => (
         <Page key={i} size={{ width: SLIDE_WIDTH, height: SLIDE_HEIGHT }} style={styles.page}>
           <PdfImage src={src} style={styles.image} />

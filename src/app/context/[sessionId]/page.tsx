@@ -397,7 +397,7 @@ export default function ContextPage() {
               disabled={isSubmitting}
               className="flex-1 md:flex-none px-4 md:px-7 py-3.5 text-[13.5px] md:text-[15px] font-medium text-white bg-tear-primary hover:opacity-90 transition-all duration-150 disabled:opacity-60 text-center leading-tight"
             >
-              {isSubmitting ? "Preparing…" : "Generate Research Document →"}
+              {isSubmitting ? "Preparing…" : "Generate teardown doc →"}
             </button>
             <button
               type="button"

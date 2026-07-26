@@ -11,6 +11,8 @@ const config: Config = {
       colors: {
         tear: {
           bg:      "#FDFAF6",
+          panel:   "#FBF7F1",
+          stage:   "#EFE7DB",
           primary: "#C2451E",
           "primary-dark": "#A83918",
           text:    "#1C1412",

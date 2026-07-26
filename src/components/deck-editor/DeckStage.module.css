@@ -1,0 +1,25 @@
+/* The slide grows to fill available stage space (rather than sitting at a fixed size) and
+   reacts to the stage's real rendered size via ResizeObserver (see useElementSize), not just
+   the window. Sizing math (min(available width, available height * 16/9), capped at 1080px)
+   is computed in JS and applied as inline width/height on .slideWrapper — CSS container query
+   units (cqw/cqh) were tried first but don't reliably resolve a definite size when the
+   container is itself a flex-grow child of nested flex rows/columns, which silently collapsed
+   the slide to 0x0. Plain ResizeObserver has no such caveat. */
+.stage {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  background: #EFE7DB;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 40px;
+  overflow: hidden;
+}
+
+.slideWrapper {
+  flex-shrink: 0;
+  border-radius: 10px;
+  box-shadow: 0 12px 38px rgba(28, 20, 18, 0.16);
+  overflow: hidden;
+}

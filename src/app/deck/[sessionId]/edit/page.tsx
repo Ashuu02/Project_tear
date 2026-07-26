@@ -13,13 +13,23 @@ import { downloadPptxFromCanvas } from "@/lib/downloadPptx";
 import { downloadDeckPdf } from "@/lib/downloadDeckPdf";
 import { downloadDataUrl } from "@/lib/downloadPng";
 import { useHistoryState } from "@/lib/useHistoryState";
+import { useElementSize } from "@/hooks/useElementSize";
+import { useViewportWidth } from "@/hooks/useViewportWidth";
+import stageStyles from "@/components/deck-editor/DeckStage.module.css";
 import DeckEditorCanvas from "@/components/deck-editor/DeckEditorCanvas";
 import PropertiesPanel, { type ElementPropsPatch } from "@/components/deck-editor/PropertiesPanel";
 import InsertPanel from "@/components/deck-editor/InsertPanel";
-import ThemeSwitcher from "@/components/deck-editor/ThemeSwitcher";
 import SlideNavigator from "@/components/deck-editor/SlideNavigator";
 import ExportMenu from "@/components/deck-editor/ExportMenu";
+import TokenUsagePopover from "@/components/deck-editor/TokenUsagePopover";
 import OffscreenSlideCapture from "@/components/deck-editor/OffscreenSlideCapture";
+import EditorOrientationBar from "@/components/deck-editor/EditorOrientationBar";
+import PresentMode from "@/components/deck-editor/PresentMode";
+import PostDownloadConfirmation from "@/components/deck-editor/PostDownloadConfirmation";
+import MobileSheet from "@/components/deck-editor/MobileSheet";
+import EditorNavOverflowMenu from "@/components/deck-editor/EditorNavOverflowMenu";
+import SlideNavBar from "@/components/deck-editor/SlideNavBar";
+import DeckEndCard from "@/components/deck-editor/DeckEndCard";
 import type Konva from "konva";
 import type { CanvasElement, CanvasSlide, DeckTheme } from "@/types/teardown";
 import type { ElementPatch } from "@/components/deck-editor/EditableElement";
@@ -52,11 +62,11 @@ export default function DeckEditPage() {
   const researchDoc = useSessionStore((s) => s.researchDoc);
   const selectedModel = useSessionStore((s) => s.selectedModel);
   const deckThemeKey  = useSessionStore((s) => s.deckThemeKey);
+  const setToolPanelCollapsed = useSessionStore((s) => s.setToolPanelCollapsed);
 
   const [ready, setReady]               = useState(false);
   const [seeding, setSeeding]           = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [scale, setScale]               = useState(0.5);
   const [selectedIds, setSelectedIds]   = useState<Set<string>>(new Set());
   // Fallback only — used when the current slide's background doesn't exactly match any
   // theme's palette (e.g. a brand-new deck before any theme's been explicitly applied).
@@ -68,10 +78,21 @@ export default function DeckEditPage() {
   const [themeFallback, setThemeFallback] = useState<DeckTheme>(() => getThemeByKey(deckThemeKey ?? undefined));
   const [autosaveStatus, setAutosaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [exportBusy, setExportBusy]     = useState<string | null>(null);
-  const [magicDesignBusy, setMagicDesignBusy] = useState(false);
   const [improveSlideBusy, setImproveSlideBusy] = useState(false);
+  const [presenting, setPresenting]     = useState(false);
+  const [downloadComplete, setDownloadComplete] = useState(false);
   const [captureSlide, setCaptureSlide] = useState<CanvasSlide | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [stageRef, stageSize] = useElementSize<HTMLDivElement>();
+  // Fall back to a sane default size until the stage is actually measured, rather than 0 —
+  // a hard "wait for a real measurement" gate means any hiccup in that measurement (a missed
+  // observer callback, a timing quirk) leaves the canvas permanently blank with no way to
+  // recover. Defaulting instead means the canvas is always visible, and simply snaps to the
+  // correct size the moment a real measurement comes in.
+  const slideWidth = stageSize.width > 0 && stageSize.height > 0
+    ? Math.min(stageSize.width, stageSize.height * (SLIDE_WIDTH / SLIDE_HEIGHT), 1080)
+    : 960;
+  const slideHeight = slideWidth * (SLIDE_HEIGHT / SLIDE_WIDTH);
+  const scale = slideWidth / SLIDE_WIDTH;
   const mainStageRef = useRef<Konva.Stage | null>(null);
   const captureResolveRef = useRef<((url: string) => void) | null>(null);
   const initializedRef = useRef(false);
@@ -82,6 +103,9 @@ export default function DeckEditPage() {
   const slides = history.state;
   const total = slides.length;
   const slide = slides[currentSlide];
+  const isLastSlide = total > 0 && currentSlide === total - 1;
+  const sourcesSlide = deckData?.slides.find((s) => s.type === "sources");
+  const sourcesCount = researchDoc?.sources?.length ?? sourcesSlide?.sources?.length ?? 0;
 
   const appliedTheme = useMemo(() => {
     const bg = slide?.background;
@@ -155,31 +179,19 @@ export default function DeckEditPage() {
     setSelectedIds(new Set());
   }, [currentSlide]);
 
-  // A drag/resize/multi-panel canvas editor doesn't translate to a phone screen — rather
-  // than cram it in, point small viewports at the read-only viewer instead.
-  const MOBILE_BREAKPOINT = 900;
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    function checkWidth() { setIsMobile(window.innerWidth < MOBILE_BREAKPOINT); }
-    checkWidth();
-    window.addEventListener("resize", checkWidth);
-    return () => window.removeEventListener("resize", checkWidth);
-  }, []);
+  const viewportWidth = useViewportWidth();
+  const isBelow1024 = viewportWidth < 1024;
+  const [mobileSheet, setMobileSheet] = useState<"tools" | "properties" | null>(null);
 
-  const fitToContainer = useCallback(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const padding = 48;
-    const availW = el.clientWidth - padding;
-    const availH = el.clientHeight - padding;
-    setScale(Math.min(availW / SLIDE_WIDTH, availH / SLIDE_HEIGHT, 1));
-  }, []);
-
+  // Tools panel defaults to collapsed on narrower desktop/tablet viewports (1024–1280px), then
+  // is fully user-controlled from there — this only needs to run once, on first mount.
+  const toolPanelDefaultAppliedRef = useRef(false);
   useEffect(() => {
-    fitToContainer();
-    window.addEventListener("resize", fitToContainer);
-    return () => window.removeEventListener("resize", fitToContainer);
-  }, [fitToContainer]);
+    if (toolPanelDefaultAppliedRef.current) return;
+    toolPanelDefaultAppliedRef.current = true;
+    if (window.innerWidth < 1280) setToolPanelCollapsed(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const prevSlide = useCallback(() => setCurrentSlide((s) => Math.max(0, s - 1)), []);
   const nextSlide = useCallback(() => setCurrentSlide((s) => Math.min(total - 1, s + 1)), [total]);
@@ -319,6 +331,7 @@ export default function DeckEditPage() {
     setExportBusy("Exporting…");
     try {
       await downloadPptxFromCanvas(productName, slides, sessionId);
+      setDownloadComplete(true);
     } catch {
       // Non-fatal — user can retry.
     } finally {
@@ -370,33 +383,7 @@ export default function DeckEditPage() {
     }
   }, [productName, slides, captureSlideAsync]);
 
-  // ── AI: Magic Design + Improve this slide ──────────────────────────────────
-  const handleMagicDesign = useCallback(async () => {
-    if (!productName || !researchDoc) return;
-    if (!window.confirm(`This replaces all ${total} slides with a new AI-generated layout. This can be undone with Cmd/Ctrl+Z. Continue?`)) return;
-    setMagicDesignBusy(true);
-    try {
-      const res = await fetch("/api/deck/layout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          productName, researchDoc, model: selectedModel ?? "claude",
-          themeKey: appliedTheme.key, sessionId,
-        }),
-      });
-      const data = await res.json() as { canvasSlides?: CanvasSlide[] };
-      if (data.canvasSlides && data.canvasSlides.length > 0) {
-        history.commit(() => data.canvasSlides!);
-        setCurrentSlide(0);
-        setSelectedIds(new Set());
-      }
-    } catch {
-      // Non-fatal — user can retry.
-    } finally {
-      setMagicDesignBusy(false);
-    }
-  }, [productName, researchDoc, selectedModel, appliedTheme, sessionId, total, history]);
-
+  // ── AI: Improve this slide ──────────────────────────────────────────────────
   const handleImproveSlide = useCallback(async () => {
     if (!productName || !slide) return;
     setImproveSlideBusy(true);
@@ -559,130 +546,267 @@ export default function DeckEditPage() {
     );
   }
 
-  if (isMobile) {
-    return (
-      <div className="h-screen bg-tear-bg flex flex-col items-center justify-center gap-4 px-8 text-center font-dm-sans">
-        <span className="text-3xl">🖥️</span>
-        <p className="text-[15px] font-medium text-tear-text">The deck editor works best on a larger screen</p>
-        <p className="text-[13px] text-tear-muted max-w-xs">Drag, resize, and multi-panel editing need more room than this screen has. View the finished deck instead.</p>
-        <Link
-          href={`/deck/${sessionId}`}
-          className="mt-2 px-5 py-2.5 text-[13px] font-semibold text-white bg-tear-primary rounded-lg hover:bg-tear-primary-dark transition-colors"
-        >
-          View deck →
-        </Link>
+  const stageContent = (
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <div ref={stageRef} className={stageStyles.stage}>
+        {slide ? (
+          <div className={stageStyles.slideWrapper} style={{ width: slideWidth, height: slideHeight }}>
+            <DeckEditorCanvas
+              slide={slide} width={SLIDE_WIDTH} height={SLIDE_HEIGHT} scale={scale}
+              selectedIds={selectedIds}
+              onSelect={handleSelect}
+              onMarqueeSelect={handleMarqueeSelect}
+              onDeselectAll={handleDeselectAll}
+              onChangeElement={handleChangeElement}
+              onLiveDrag={handleLiveDrag}
+              onStageMount={(s) => { mainStageRef.current = s; }}
+            />
+          </div>
+        ) : (
+          <span className="text-sm text-tear-muted animate-pulse">No deck data. Generate a deck first.</span>
+        )}
       </div>
-    );
-  }
+
+      {isLastSlide && <DeckEndCard total={total} sourcesCount={sourcesCount} />}
+      {total > 0 && <SlideNavBar total={total} currentSlide={currentSlide} onSelectSlide={setCurrentSlide} />}
+    </div>
+  );
 
   return (
-    <div className="h-screen bg-[#2B2724] flex flex-col font-dm-sans text-tear-text overflow-hidden">
+    <div className="h-screen bg-tear-bg flex flex-col font-dm-sans text-tear-text overflow-hidden">
       <link rel="stylesheet" href={buildGoogleFontsHref()} />
 
-      <nav className="flex-shrink-0 flex items-center justify-between px-6 py-3 border-b border-black/20 bg-[#221F1D]">
-        <div className="flex items-center gap-4">
-          <Link href={`/deck/${sessionId}`} className="flex items-center gap-2 text-white/70 hover:text-white text-[13px] transition-colors">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M11.5 7h-9M6 3.5 2.5 7 6 10.5" />
+      <nav className="flex-shrink-0 flex items-center justify-between gap-7 px-7 py-3.5 border-b border-tear-border bg-tear-bg">
+        {/* Left: logo + breadcrumb */}
+        <div className="flex items-center gap-5 min-w-0">
+          <Link href="/" className="flex items-center gap-2 flex-shrink-0">
+            <svg width="21" height="21" viewBox="0 0 40 40" fill="none">
+              <path d="M11 5 H23 L29 11 V29 Q29 32 26 32 H11 Q8 32 8 29 V8 Q8 5 11 5 Z" fill="#FDFAF6" stroke="#C2451E" strokeWidth="2.2" strokeLinejoin="round" />
+              <path d="M22.5 5 V11.5 H29" stroke="#C2451E" strokeWidth="2.2" strokeLinejoin="round" fill="none" />
+              <circle cx="24" cy="24" r="7" fill="#FDFAF6" stroke="#C2451E" strokeWidth="2.2" />
+              <line x1="21" y1="24" x2="27" y2="24" stroke="#C2451E" strokeWidth="2.4" strokeLinecap="round" />
+              <line x1="28.9" y1="28.9" x2="34.5" y2="34.5" stroke="#C2451E" strokeWidth="2.8" strokeLinecap="round" />
             </svg>
-            Read-only viewer
+            <span className="font-lora text-[19px] font-semibold tracking-tight text-tear-text">Tear</span>
           </Link>
-          <span className="text-white/30">·</span>
-          <span className="text-[13px] text-white/70">{productName} · Deck Editor (preview)</span>
+          <div className="flex items-center gap-2 min-w-0 whitespace-nowrap">
+            <Link
+              href={`/research/${sessionId}`}
+              className="text-[13.5px] font-medium text-tear-primary hover:text-tear-primary-dark min-w-0 overflow-hidden text-ellipsis whitespace-nowrap"
+            >
+              {productName} teardown
+            </Link>
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none" className="flex-shrink-0">
+              <polyline points="5.5,3.5 9,7 5.5,10.5" stroke="#C4B8B0" strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span className="text-[13.5px] text-tear-muted flex-shrink-0">Deck</span>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-[11px] text-white/30 w-14 text-right">
-            {autosaveStatus === "saving" && "Saving…"}
-            {autosaveStatus === "saved" && "Saved"}
-            {autosaveStatus === "error" && <span className="text-red-400/70">Save failed</span>}
-          </span>
+
+        {/* Center: slide counter — hidden below 768px, folded into the overflow menu instead */}
+        <div className="hidden md:flex items-center gap-1.5 flex-shrink-0">
+          <span className="text-[13px] text-tear-muted">Slide</span>
+          <span className="font-mono text-[13px] font-medium text-tear-text">{currentSlide + 1}</span>
+          <span className="font-mono text-[13px] text-[#C4B8B0]">/</span>
+          <span className="font-mono text-[13px] text-tear-muted">{total}</span>
+        </div>
+
+        {/* Right: status + actions */}
+        <div className="flex items-center gap-3.5 flex-shrink-0">
+          <div className="hidden md:flex items-center gap-1.5">
+            <svg width="11" height="11" viewBox="0 0 10 10" fill="none">
+              <polyline points="1.5,5.2 3.6,7.3 8.5,2.4" stroke={autosaveStatus === "error" ? "#B45309" : "#7C6E68"} strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span className={`font-mono text-[11.5px] whitespace-nowrap ${autosaveStatus === "error" ? "text-[#B45309]" : "text-tear-muted"}`}>
+              {autosaveStatus === "saving" && "Saving…"}
+              {autosaveStatus === "saved" && "All changes saved"}
+              {autosaveStatus === "error" && "Couldn't save"}
+              {autosaveStatus === "idle" && "All changes saved"}
+            </span>
+          </div>
+
+          <div className="hidden md:block">
+            <TokenUsagePopover sessionId={sessionId} />
+          </div>
+
+          <div className="hidden md:flex items-center gap-0.5">
+            <button
+              onClick={history.undo} disabled={!history.canUndo} title="Undo"
+              className="w-8 h-8 rounded-lg border-none bg-transparent flex items-center justify-center cursor-pointer transition-colors hover:bg-[#F0E8DF] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+            >
+              <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+                <path d="M4 8 H11 A3.5 3.5 0 0 1 11 15 H7" stroke={history.canUndo ? "#7C6E68" : "#C4B8B0"} strokeWidth="1.5" fill="none" strokeLinecap="round" />
+                <polyline points="6.8,4.8 3.5,8 6.8,11.2" stroke={history.canUndo ? "#7C6E68" : "#C4B8B0"} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            <button
+              onClick={history.redo} disabled={!history.canRedo} title="Redo"
+              className="w-8 h-8 rounded-lg border-none bg-transparent flex items-center justify-center cursor-pointer transition-colors hover:bg-[#F0E8DF] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+            >
+              <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+                <path d="M14 8 H7 A3.5 3.5 0 0 0 7 15 H11" stroke={history.canRedo ? "#7C6E68" : "#C4B8B0"} strokeWidth="1.5" fill="none" strokeLinecap="round" />
+                <polyline points="11.2,4.8 14.5,8 11.2,11.2" stroke={history.canRedo ? "#7C6E68" : "#C4B8B0"} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="hidden md:block w-px h-[22px] bg-tear-border" />
+
           <button
-            onClick={handleMagicDesign}
-            disabled={magicDesignBusy || !researchDoc}
-            title={researchDoc ? "AI-generate a full deck layout from your research" : "No research document available"}
-            className="px-3 py-1 text-[12px] font-medium text-white bg-gradient-to-r from-[#5B3FC8] to-[#C2451E] rounded-md hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+            onClick={() => setPresenting(true)}
+            className="hidden md:inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-tear-primary bg-transparent text-tear-primary font-dm-sans text-[13px] font-medium cursor-pointer transition-colors hover:bg-[#FFF7ED] hover:border-tear-primary-dark hover:text-tear-primary-dark"
           >
-            {magicDesignBusy ? "Designing…" : "✨ Magic Design"}
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polygon points="3,2 10,6 3,10" fill="currentColor" /></svg>
+            Present
           </button>
-          <ThemeSwitcher activeTheme={appliedTheme} onApply={handleApplyTheme} />
-          <button onClick={history.undo} disabled={!history.canUndo}
-            className="px-2.5 py-1 text-[12px] text-white/70 border border-white/15 rounded-md hover:border-white/40 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
-            Undo
-          </button>
-          <button onClick={history.redo} disabled={!history.canRedo}
-            className="px-2.5 py-1 text-[12px] text-white/70 border border-white/15 rounded-md hover:border-white/40 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
-            Redo
-          </button>
-          <span className="text-[11px] text-white/40 font-mono">Slide {currentSlide + 1} / {total}</span>
+
           <ExportMenu
             busyLabel={exportBusy}
             onDownloadPptx={handleDownloadPptx}
             onDownloadPdf={handleDownloadPdf}
             onDownloadPng={handleDownloadPng}
           />
+
+          <div className="md:hidden">
+            <EditorNavOverflowMenu
+              sessionId={sessionId}
+              currentSlide={currentSlide}
+              totalSlides={total}
+              autosaveStatus={autosaveStatus}
+              canUndo={history.canUndo}
+              canRedo={history.canRedo}
+              onUndo={history.undo}
+              onRedo={history.redo}
+              onPresent={() => setPresenting(true)}
+            />
+          </div>
         </div>
       </nav>
 
+      <EditorOrientationBar />
+
       <OffscreenSlideCapture slide={captureSlide} onCaptured={handleSlideCaptured} />
 
-      <div className="flex-1 flex overflow-hidden">
-        <InsertPanel
-          theme={theme}
-          productName={productName}
-          researchDoc={researchDoc}
-          currentSlide={slide}
-          nextZIndex={slide ? Math.max(0, ...slide.elements.map((el) => el.zIndex)) + 1 : 0}
-          onInsertElement={handleInsertElement}
-          onInsertSlide={handleInsertSlide}
-        />
+      {isBelow1024 ? (
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {stageContent}
 
-        <div ref={containerRef} className="flex-1 flex items-center justify-center overflow-hidden">
-          {slide ? (
-            <div
-              className="bg-white shadow-[0_8px_40px_rgba(0,0,0,0.35)]"
-              style={{ width: SLIDE_WIDTH * scale, height: SLIDE_HEIGHT * scale }}
+          <div className="flex-shrink-0 flex items-center justify-center gap-2.5 px-4 py-2 border-t border-tear-border bg-tear-panel">
+            <button
+              onClick={() => setMobileSheet("tools")}
+              className="flex-1 max-w-[200px] px-4 py-2 rounded-lg border border-tear-border bg-white text-[13px] font-medium text-tear-text hover:border-tear-primary transition-colors"
             >
-              <DeckEditorCanvas
-                slide={slide} width={SLIDE_WIDTH} height={SLIDE_HEIGHT} scale={scale}
-                selectedIds={selectedIds}
-                onSelect={handleSelect}
-                onMarqueeSelect={handleMarqueeSelect}
-                onDeselectAll={handleDeselectAll}
-                onChangeElement={handleChangeElement}
-                onLiveDrag={handleLiveDrag}
-                onStageMount={(s) => { mainStageRef.current = s; }}
+              Edit slide
+            </button>
+            <button
+              onClick={() => setMobileSheet("properties")}
+              className="flex-1 max-w-[200px] px-4 py-2 rounded-lg border border-tear-border bg-white text-[13px] font-medium text-tear-text hover:border-tear-primary transition-colors"
+            >
+              Properties
+            </button>
+          </div>
+
+          <SlideNavigator
+            orientation="horizontal"
+            slides={slides}
+            currentSlide={currentSlide}
+            onSelectSlide={setCurrentSlide}
+            onReorderSlides={handleReorderSlides}
+            onDuplicateSlide={handleDuplicateSlide}
+            onDeleteSlide={handleDeleteSlide}
+            onAddSlide={handleAddSlide}
+          />
+
+          {mobileSheet === "tools" && (
+            <MobileSheet title="Edit slide" onClose={() => setMobileSheet(null)}>
+              <InsertPanel
+                variant="sheet"
+                theme={theme}
+                productName={productName}
+                researchDoc={researchDoc}
+                currentSlide={slide}
+                nextZIndex={slide ? Math.max(0, ...slide.elements.map((el) => el.zIndex)) + 1 : 0}
+                onInsertElement={handleInsertElement}
+                onInsertSlide={handleInsertSlide}
               />
-            </div>
-          ) : (
-            <span className="text-sm text-white/50 animate-pulse">No deck data. Generate a deck first.</span>
+            </MobileSheet>
+          )}
+
+          {mobileSheet === "properties" && slide && (
+            <MobileSheet title="Properties" onClose={() => setMobileSheet(null)}>
+              <PropertiesPanel
+                variant="sheet"
+                slide={slide}
+                selectedIds={selectedIds}
+                onUpdateElements={handleUpdateElements}
+                onReorder={handleReorder}
+                onToggleLock={handleToggleLock}
+                onToggleHidden={handleToggleHidden}
+                onDeleteElements={handleDeleteElements}
+                onChangeBackground={handleChangeBackground}
+                onImproveSlide={handleImproveSlide}
+                improveSlideBusy={improveSlideBusy}
+                activeTheme={appliedTheme}
+                onApplyTheme={handleApplyTheme}
+              />
+            </MobileSheet>
           )}
         </div>
-
-        {slide && (
-          <PropertiesPanel
-            slide={slide}
-            selectedIds={selectedIds}
-            onUpdateElements={handleUpdateElements}
-            onReorder={handleReorder}
-            onToggleLock={handleToggleLock}
-            onToggleHidden={handleToggleHidden}
-            onDeleteElements={handleDeleteElements}
-            onChangeBackground={handleChangeBackground}
-            onImproveSlide={handleImproveSlide}
-            improveSlideBusy={improveSlideBusy}
+      ) : (
+        <div className="flex-1 flex overflow-hidden">
+          <SlideNavigator
+            slides={slides}
+            currentSlide={currentSlide}
+            onSelectSlide={setCurrentSlide}
+            onReorderSlides={handleReorderSlides}
+            onDuplicateSlide={handleDuplicateSlide}
+            onDeleteSlide={handleDeleteSlide}
+            onAddSlide={handleAddSlide}
           />
-        )}
-      </div>
 
-      <SlideNavigator
-        slides={slides}
-        currentSlide={currentSlide}
-        onSelectSlide={setCurrentSlide}
-        onReorderSlides={handleReorderSlides}
-        onDuplicateSlide={handleDuplicateSlide}
-        onDeleteSlide={handleDeleteSlide}
-        onAddSlide={handleAddSlide}
-      />
+          <InsertPanel
+            theme={theme}
+            productName={productName}
+            researchDoc={researchDoc}
+            currentSlide={slide}
+            nextZIndex={slide ? Math.max(0, ...slide.elements.map((el) => el.zIndex)) + 1 : 0}
+            onInsertElement={handleInsertElement}
+            onInsertSlide={handleInsertSlide}
+          />
+
+          {stageContent}
+
+          {slide && (
+            <PropertiesPanel
+              slide={slide}
+              selectedIds={selectedIds}
+              onUpdateElements={handleUpdateElements}
+              onReorder={handleReorder}
+              onToggleLock={handleToggleLock}
+              onToggleHidden={handleToggleHidden}
+              onDeleteElements={handleDeleteElements}
+              onChangeBackground={handleChangeBackground}
+              onImproveSlide={handleImproveSlide}
+              improveSlideBusy={improveSlideBusy}
+              activeTheme={appliedTheme}
+              onApplyTheme={handleApplyTheme}
+            />
+          )}
+        </div>
+      )}
+
+      {downloadComplete && (
+        <PostDownloadConfirmation sessionId={sessionId} onDismiss={() => setDownloadComplete(false)} />
+      )}
+
+      {presenting && (
+        <PresentMode
+          slides={slides}
+          currentSlide={currentSlide}
+          onNavigate={setCurrentSlide}
+          onExit={() => setPresenting(false)}
+        />
+      )}
     </div>
   );
 }
