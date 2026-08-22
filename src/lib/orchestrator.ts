@@ -119,7 +119,7 @@ export async function runOrchestrator(input: OrchestratorInput): Promise<Orchest
   ].filter(Boolean).join("\n");
 
   await generateText({
-    model: groqAI("llama-3.3-70b-versatile"),
+    model: groqAI("openai/gpt-oss-120b"),
     maxOutputTokens: 400,
     stopWhen: stepCountIs(5),
     system: `You are the orchestrator for a product teardown research pipeline.

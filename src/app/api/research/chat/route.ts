@@ -112,7 +112,7 @@ Minimize tokens — be concise.`;
         });
         resultText = result.text;
         usage = result.usage;
-        modelUsed = "llama-3.3-70b-versatile";
+        modelUsed = "openai/gpt-oss-120b";
 
       } else {
         // Claude: native web search tool

@@ -42,14 +42,14 @@ const MODELS = [
   },
   {
     key: "groq",
-    label: "Groq / Llama",
-    sub: "Meta LLaMA 3.3 70B",
+    label: "Groq / OSS",
+    sub: "GPT-OSS 120B",
     color: "#7C3AED",
     bg: "#F3EEFF",
     border: "#DDD0F8",
     agents: [],
     models: [
-      { name: "llama-3.3-70b-versatile", role: "All agents", tier: "Free", inputPrice: 0, outputPrice: 0 },
+      { name: "openai/gpt-oss-120b", role: "All agents", tier: "Free", inputPrice: 0, outputPrice: 0 },
     ],
     limits: [
       { label: "TPM (free)",  value: "14,400 tok/min" },
