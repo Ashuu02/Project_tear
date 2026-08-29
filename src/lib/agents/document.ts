@@ -91,6 +91,28 @@ function extractJSON<T>(text: string): T {
   throw new Error("No JSON found in model response");
 }
 
+function extractResearchUrls(research: string): Array<{ url: string; title: string }> {
+  const results: Array<{ url: string; title: string }> = [];
+  const seen = new Set<string>();
+
+  // Parse "SOURCE: {url}\nTITLE: {title}" blocks (Groq/Tavily path format)
+  const sourceBlockRe = /SOURCE:\s*(https?:\/\/[^\s]+)\nTITLE:\s*([^\n]+)/g;
+  let sbMatch: RegExpExecArray | null;
+  while ((sbMatch = sourceBlockRe.exec(research)) !== null) {
+    const url = sbMatch[1].trim();
+    const title = sbMatch[2].trim();
+    if (!seen.has(url)) { seen.add(url); results.push({ url, title }); }
+  }
+
+  // Fallback: extract any bare https URLs from the text (Gemini/Claude path)
+  const urlMatches = research.match(/https?:\/\/[^\s)>\]"',]+/g) ?? [];
+  for (const url of urlMatches) {
+    if (!seen.has(url)) { seen.add(url); results.push({ url, title: "" }); }
+  }
+
+  return results.slice(0, 20);
+}
+
 function buildDocPrompt(
   productName: string,
   focusAreas: string,
@@ -101,11 +123,16 @@ function buildDocPrompt(
   depthConfig: DepthConfig,
   sectionsNeeded?: string[],
 ): string {
+  const researchUrls = extractResearchUrls(research);
+  const urlListBlock = researchUrls.length
+    ? `\nAVAILABLE SOURCE URLS — use these exact URLs (verbatim) in the "url" field. Do not invent or guess URLs.\n${researchUrls.map((s, i) => `${i + 1}. ${s.url}${s.title ? ` | ${s.title}` : ""}`).join("\n")}\n`
+    : `\nAVAILABLE SOURCE URLS — none found; set "url":"#" for all sources.\n`;
+
   return `Product analyst. Teardown of "${productName}" as raw JSON only — no markdown, no backticks.
 
 RESEARCH:
 ${research}
-
+${urlListBlock}
 FOCUS: ${focusAreas} | goal=${tier1.goal ?? "general"}${userContext ? ` | ${userContext}` : ""}
 USER SELECTIONS (Tier 2): ${tier2Context || "none"}
 ${sectionsNeeded ? `\nONLY GENERATE THESE SECTION IDS (the rest already exist from a prior cached run — do not regenerate them): ${sectionsNeeded.join(", ")}\n` : ""}
@@ -143,7 +170,7 @@ JSON:
 {"id":"financials","title":"Financials & Funding","content":"...","keyInsight":"...","stats":[{"label":"Raised","value":"..."},{"label":"Last Round","value":"..."},{"label":"Valuation","value":"..."}],"bullets":["...","...","..."],"tables":[{"id":"rounds","title":"Funding","headers":["Round","Year","Amount"],"rows":[["Seed","...","..."],["Series A","...","..."],["Later","...","..."]]}],"chartData":[{"id":"funding","type":"bar","title":"Funding ($M)","xAxis":"Round","yAxis":"$M","unit":"$M","data":[{"label":"Seed","value":2},{"label":"Series A","value":15},{"label":"Later","value":80}]}],"sourceNums":[2]},
 {"id":"swot_analysis","title":"SWOT Analysis","content":"Strengths: ...\\n\\nWeaknesses: ...","keyInsight":"...","bullets":["STRENGTH: ...","STRENGTH: ...","WEAKNESS: ...","OPPORTUNITY: ...","THREAT: ..."],"sourceNums":[1,6]},
 {"id":"strategic_outlook","title":"Strategic Outlook & Risks","content":"...","keyInsight":"Bull or bear in one sentence","stats":[{"label":"Verdict","value":"..."},{"label":"Risk","value":"..."},{"label":"Catalyst","value":"..."}],"bullets":["...","...","..."],"sourceNums":[2,6]}
-],"sources":[{"num":1,"domain":"...","title":"...","url":"https://...","usedIn":"..."},{"num":2,"domain":"...","title":"...","url":"https://...","usedIn":"..."}]}
+],"sources":[{"num":1,"domain":"hostname-from-url","title":"page title","url":"<exact URL from AVAILABLE SOURCE URLS list>","usedIn":"..."},{"num":2,"domain":"hostname-from-url","title":"page title","url":"<exact URL from AVAILABLE SOURCE URLS list>","usedIn":"..."}]}
 
 Only include sections above that the research actually supports (per SKIP LOGIC) — the list above is the full possible set, not a required set.`;
 }
