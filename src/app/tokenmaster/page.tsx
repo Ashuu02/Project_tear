@@ -32,7 +32,7 @@ const MODELS = [
     border: "#C5D9F8",
     agents: [],
     models: [
-      { name: "gemini-2.0-flash", role: "All agents", tier: "Free", inputPrice: 0, outputPrice: 0 },
+      { name: "gemini-3.8-flash", role: "All agents", tier: "Free", inputPrice: 0, outputPrice: 0 },
     ],
     limits: [
       { label: "RPM (free)",  value: "15 req/min" },

@@ -22,7 +22,7 @@ const groqAI = createGroq({
 
 export function getQuestionModel(provider: ModelProvider) {
   switch (provider) {
-    case "gemini": return googleAI("gemini-2.0-flash");
+    case "gemini": return googleAI("gemini-3.8-flash");
     case "groq":   return groqAI("openai/gpt-oss-120b");
     default:       return anthropic("claude-haiku-4-5-20251001");
   }
@@ -30,7 +30,7 @@ export function getQuestionModel(provider: ModelProvider) {
 
 export function getCrawlerModel(provider: ModelProvider) {
   switch (provider) {
-    case "gemini": return googleAI("gemini-2.0-flash");
+    case "gemini": return googleAI("gemini-3.8-flash");
     case "groq":   return groqAI("openai/gpt-oss-120b");
     default:       return anthropic("claude-haiku-4-5-20251001");
   }
@@ -38,7 +38,7 @@ export function getCrawlerModel(provider: ModelProvider) {
 
 export function getDocumentModel(provider: ModelProvider) {
   switch (provider) {
-    case "gemini": return googleAI("gemini-2.0-flash");
+    case "gemini": return googleAI("gemini-3.8-flash");
     case "groq":   return groqAI("openai/gpt-oss-120b");
     default:       return anthropic("claude-sonnet-4-6");
   }
@@ -46,7 +46,7 @@ export function getDocumentModel(provider: ModelProvider) {
 
 export function getDeckModel(provider: ModelProvider) {
   switch (provider) {
-    case "gemini": return googleAI("gemini-2.0-flash");
+    case "gemini": return googleAI("gemini-3.8-flash");
     case "groq":   return groqAI("openai/gpt-oss-120b");
     default:       return anthropic("claude-haiku-4-5-20251001");
   }
@@ -59,7 +59,7 @@ export function getDeckModel(provider: ModelProvider) {
 export type AgentKind = "question" | "crawler" | "document" | "deck";
 
 export function resolveModelName(provider: ModelProvider, kind: AgentKind): string {
-  if (provider === "gemini") return "gemini-2.0-flash";
+  if (provider === "gemini") return "gemini-3.8-flash";
   if (provider === "groq")   return "openai/gpt-oss-120b";
   return kind === "document" ? "claude-sonnet-4-6" : "claude-haiku-4-5-20251001";
 }

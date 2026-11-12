@@ -88,7 +88,7 @@ Minimize tokens — be concise.`;
         });
         resultText = result.text;
         usage = result.usage;
-        modelUsed = "gemini-2.0-flash";
+        modelUsed = "gemini-3.8-flash";
 
       } else if (model === "groq") {
         // Groq: Tavily search then Groq synthesis
