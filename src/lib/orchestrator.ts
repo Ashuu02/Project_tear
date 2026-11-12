@@ -1,5 +1,5 @@
 import { generateText, tool, stepCountIs } from "ai";
-import { createGroq } from "@ai-sdk/groq";
+import { anthropic } from "@/lib/anthropic";
 import { z } from "zod";
 import type { ModelProvider } from "@/lib/providers";
 import type { ResearchDoc } from "@/types/teardown";
@@ -7,8 +7,6 @@ import { runQuestionAgent } from "./agents/question";
 import { runCrawlerAgent } from "./agents/crawler";
 import { runDocumentAgent, CHARS_PER_SEC } from "./agents/document";
 import type { DepthConfig, SendFn } from "./agents/types";
-
-const groqAI = createGroq({ apiKey: process.env.GROQ_API_KEY ?? "" });
 
 export interface OrchestratorInput {
   productName: string;
@@ -119,7 +117,7 @@ export async function runOrchestrator(input: OrchestratorInput): Promise<Orchest
   ].filter(Boolean).join("\n");
 
   await generateText({
-    model: groqAI("openai/gpt-oss-120b"),
+    model: anthropic("claude-haiku-4-5-20251001"),
     maxOutputTokens: 400,
     stopWhen: stepCountIs(5),
     system: `You are the orchestrator for a product teardown research pipeline.
