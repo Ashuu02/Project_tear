@@ -126,7 +126,7 @@ export async function runCrawlerAgent(input: CrawlerInput): Promise<CrawlerResul
 
     const geminiUsage = await geminiCrawler.usage;
     if (geminiUsage) {
-      await trackTokens(sessionId, productName, "crawler_agent", "gemini-2.0-flash",
+      await trackTokens(sessionId, productName, "crawler_agent", "gemini-3.8-flash",
         geminiUsage.inputTokens, geminiUsage.outputTokens, { durationMs: Date.now() - startTime });
     }
 
